@@ -81,7 +81,11 @@
 
 附 **git** 常用命令图解 <http://marklodato.github.io/visual-git-guide/index-zh-cn.html>
 
-## 继续添加提交
+## 提交到HEAD
 
     $ git add *
     $ git commit -m "add git commit & iTerm2"
+
+## 推送改动到远端仓库
+
+    $ git push origin master
