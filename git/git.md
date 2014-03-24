@@ -80,3 +80,8 @@
     $ git push origin master
 
 附 **git** 常用命令图解 <http://marklodato.github.io/visual-git-guide/index-zh-cn.html>
+
+## 继续添加提交
+
+    $ git add *
+    $ git commit -m "add git commit & iTerm2"

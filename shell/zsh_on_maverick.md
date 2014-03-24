@@ -33,18 +33,18 @@
 搜索 **wget**
 
     $ port search wget
-    wget @1.15 (net, www)
-    internet file retriever
+    → wget @1.15 (net, www)
+    → internet file retriever
 
 再用 **MacPorts** 下载：
 
     $ sudo port install wget
-    --->  Computing dependencies for wget
-    ... doing something ...
-    --->  Cleaning wget
-    --->  Updating database of binaries: 100.0%
-    --->  Scanning binaries for linking errors:100.0%
-    --->  No broken files found.
+    → --->  Computing dependencies for wget
+    → ... doing something ...
+    → --->  Cleaning wget
+    → --->  Updating database of binaries: 100.0%
+    → --->  Scanning binaries for linking errors:100.0%
+    → --->  No broken files found.
 
 **MacPorts** 其他几个常用的命令：
 
@@ -88,7 +88,7 @@
     
     # 5. Start / restart zsh (open a new terminal is easy enough…)
 
-##配置oh-my-zsh
+## 配置oh-my-zsh
 
 试了几个外部命令，发现 **`port`** 不见了，打开 `~/.zshrc` 配置环境变量，将 bash 中 MacPorts 自动添加的 `PATH` 拷到 `.zshrc` 中：
 
@@ -106,3 +106,17 @@
     → export PATH=$HOME/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:$PATH
 
 附上从酷壳中找到的 [vim速查手册](http://jrmiii.com/attachments/Vim.pdf)
+
+## 安装iTerm2
+
+与上面类似：
+
+    $ port search iTerm2
+    → iTerm2 @1.0.0.20130811 (aqua, shells)
+    → Enhanced terminal emulator program, successor to iTerm
+    $ sudo port install iTerm2
+    ...
+    → --->  No broken files found.
+
+这是一个加强版Terminal，自行体验吧。
+
