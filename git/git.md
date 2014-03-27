@@ -215,3 +215,66 @@
     # recover & clean
     $ git stash pop
 
+###### 强行销毁还没有被合并的分支，此操作会丢失修改数据：
+
+    $ git branch -D feature-vulcan
+
+###### 查看远程库的信息，使用`-v`查看详细信息：
+
+    $ git remote
+    $ git remote -v
+
+###### 推送分支<branch-name>：
+
+    $ git push origin <branch-name>
+
+###### 创建远程origin的<branch-name>分支到本地，建立本地<branch-name>：
+
+    $ git checkout -b dev origin/<branch-name>
+
+###### 建立本地<branch-name>与origin/<branch-name>之间的连接：
+
+    $ git branch --set-upstream <branch-name> origin/<branch-name>
+
+###### 获得最新的当前分支：
+
+    $ git pull
+
+###### 为当前分支版本创建标签，或根据<commit-id>创建标签：
+
+    $ git tag <tag-name>
+    $ git tag <tag-name> <commit-id>
+    $ git tag -a <tag-name> -m "<commit-string>" <commit-id>
+
+###### 查看现有标签：
+
+    $ git tag
+
+###### 查看标签信息：
+
+    $ git show <tag-name>
+
+###### 用PGP签名标签：
+
+    $ git tag -s <tag-name> -m "<commit-string>" <commit-id>
+
+###### 删除标签：
+
+    $ git tag -d <tag-name>
+
+###### 推送<tag-name>标签到远程库，或推送所有未推送的tag到远程库：
+
+    $ git push origin <tag-name>
+    $ git push origin --tags
+
+###### 删除远程库标签，要先删除本地tag，再从远程库中删除：
+
+    $ git tag -d <tag-name>
+    $ git push origin :refs/tags/<tag-name>
+
+###### 在git中配置alias：
+
+    $ git config --global alias.<alias-string> <origin-string>
+    
+    # looks awsome! 
+    $ git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
