@@ -1,5 +1,7 @@
 # find 命令速查
 
+最近经常用到这个神奇的命令，所以做个速查记录。
+
 ## 附：UNIX中的文件类型：
 
 `d` 目录；
@@ -68,7 +70,9 @@ not: `!`
 
 如，查找`/usr/bin`下的符号链接文件（Symbolic Link）：
 
-    find /usr/bin -type l
+    $ find /usr/bin -type l
+
+`-prune`: 指定忽略查找的目录，与`-depth`共用时会被忽略
 
 
 ## 时间相关的查找
@@ -119,7 +123,7 @@ not: `!`
 
 查找当前目录中所有以main开头的文件，并显示这些文件的内容：
 
-    find . -name "main*" -exec more {} \;
+    $ find . -name "main*" -exec more {} \;
 
 删除当前目录下所有一周之内没有被访问过的a .out或*.o文件；
 
@@ -127,8 +131,21 @@ not: `!`
 
 find命令在当前目录及其子目录下找到这佯的文件之后，再进行判断，看其最后访问时间是否在7天以前（条件`-atime +7`），若是，则对该文件执行命令`rm` `<filepath>`：
 
-    find . \( -name "a.out" -o -name "*.o" \) -atime +7 -exec rm {} \;
+    $ find . \( -name "a.out" -o -name "*.o" \) -atime +7 -exec rm {} \;
 
 查找并列出具有`setuid`权限与`setgid`权限的文件：
 
-    find / -type f \( -perm -04000 -o -perm -02000 \) \-exec ls -lg {} \;　　
+    $ find / -type f \( -perm -04000 -o -perm -02000 \) \-exec ls -lg {} \;　　
+
+查找系统中的每一个普通文件，然后使用xargs命令来测试它们分别属于哪类文件
+
+    $ find . -type f -print | xargs file
+
+将找到的结果输出至文件：
+
+    find . -name "my*" -print | xargs echo >> /temp/mylog
+
+在`/usr`中查找文件名为`a*`的文件，并忽略路径`/usr/bin`及`/usr/share`：
+
+    find /usr \( -path "/usr/bin" -o -path "/usr/share" \) -prune -o -iname "a*" -print
+
