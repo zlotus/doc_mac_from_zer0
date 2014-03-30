@@ -1,4 +1,4 @@
-# 使用 zsh
+# 关于 zsh 的故事
 
 ## 安装X11
 
@@ -22,29 +22,31 @@
 
 额，怎么 **Maverick** 自带 **git**…
 
+**装上面这一大堆乱七八糟的东西其实是想装git的…囧rz…**
+
     man git
 
 ## 顺便安装 wget 测试 MacPorts
 
-**wget** 为非必须，只是试一下 **MacPorts** 的威力，第一次运行先更新下，`-v` 有详细信息：
+只是想试一下 **MacPorts** 的威力，第一次运行先更新下，`-v` 有详细信息：
 
     $ sudo port -v selfupdate
 
 搜索 **wget**
 
     $ port search wget
-    → wget @1.15 (net, www)
-    → internet file retriever
+    wget @1.15 (net, www)
+    internet file retriever
 
 再用 **MacPorts** 下载：
 
     $ sudo port install wget
-    → --->  Computing dependencies for wget
-    → ... doing something ...
-    → --->  Cleaning wget
-    → --->  Updating database of binaries: 100.0%
-    → --->  Scanning binaries for linking errors:100.0%
-    → --->  No broken files found.
+    --->  Computing dependencies for wget
+    ... doing something ...
+    --->  Cleaning wget
+    --->  Updating database of binaries: 100.0%
+    --->  Scanning binaries for linking errors:100.0%
+    --->  No broken files found.
 
 **MacPorts** 其他几个常用的命令：
 
@@ -67,7 +69,7 @@
     $ port variants wget
 
 
-全自动安装、激活、清理。据说是出于编译原因，用MacPorts安装的包都放在了 `/opt/local/` 下。
+全自动安装、激活、清理。据说是出于编译原因，用 **MacPorts** 安装的包都放在了 `/opt/local/` 下。
 
 ## 安装oh-my-zsh
 
@@ -90,7 +92,7 @@
 
 ## 配置oh-my-zsh
 
-试了几个外部命令，发现 **`port`** 不见了，打开 `~/.zshrc` 配置环境变量，将 bash 中 MacPorts 自动添加的 `PATH` 拷到 `.zshrc` 中：
+试了几个外部命令，发现刚装的 **`port`** 不见了，打开 `~/.zshrc` 配置环境变量，将 bash 中 MacPorts 自动添加的 `PATH` 拷到 `.zshrc` 中：
 
     # check current PATH, HOME
     $ echo $PATH
@@ -100,10 +102,10 @@
     $ vi ~/.zshrc ~/.bash_profile
     
     # MacPort added in .bash_profile, copy this: 
-    → export PATH=/opt/local/bin:/opt/local/sbin:$PATH
+    export PATH=/opt/local/bin:/opt/local/sbin:$PATH
     
     # to .zshrc
-    → export PATH=$HOME/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:$PATH
+    export PATH=$HOME/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:$PATH
 
 附上从酷壳中找到的 [vim速查手册](http://jrmiii.com/attachments/Vim.pdf)
 
@@ -112,11 +114,10 @@
 与上面类似：
 
     $ port search iTerm2
-    → iTerm2 @1.0.0.20130811 (aqua, shells)
-    → Enhanced terminal emulator program, successor to iTerm
+    iTerm2 @1.0.0.20130811 (aqua, shells)
+    Enhanced terminal emulator program, successor to iTerm
     $ sudo port install iTerm2
     ...
-    → --->  No broken files found.
+    --->  No broken files found.
 
 这是一个加强版Terminal，自行体验吧。
-

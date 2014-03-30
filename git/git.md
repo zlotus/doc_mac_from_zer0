@@ -6,10 +6,11 @@
 
 ## 初始化前确认认证的公钥：
 
-     $ ssh -T git@github.com
+    $ ssh -T git@github.com
+    
 应返回：
 
-    → Hi zlotus! You've successfully authenticated, but GitHub does not provide shell access.
+    Hi zlotus! You've successfully authenticated, but GitHub does not provide shell access.
 
 ## 克隆库：
 
@@ -35,7 +36,7 @@
 ### 在检查连接是否成功时报错：
 
     $ ssh -T git@github.com
-    → Permission denied (publickey).
+    Permission denied (publickey).
 
     
 解决参考：<http://blog.csdn.net/keyboardota/article/details/7603630>
@@ -73,7 +74,7 @@
 完成了 SSH Key 的添加后：
 
     $ .ssh  ssh -T git@github.com           
-    → Hi zlotus! You've successfully authenticated, but GitHub does not provide shell access.
+    Hi zlotus! You've successfully authenticated, but GitHub does not provide shell access.
 
 再提交：
 
@@ -96,7 +97,7 @@
 
 作者 @ [廖雪峰](http://weibo.com/liaoxuefeng)
 
-我把教程里的命令列出来方便查找，详情请访问原始地址。
+我把教程里的命令列出来方便查找，详情请访问原始地址，**在网上见过的最好的中文教程**。
 
 ###### 把一个本地目录变成 git 仓库：
 
@@ -278,3 +279,5 @@
     
     # looks awsome! 
     $ git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+
+###### 
