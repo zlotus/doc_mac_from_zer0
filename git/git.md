@@ -280,4 +280,8 @@
     # looks awsome! 
     $ git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
-###### 
+###### 在git中配置proxy，有时候会被各种各样的墙挡住去路：
+
+    # --local modify .git/config
+    # --global modify ~/.gitconfig
+    git config --local http.proxy http://127.0.0.1:8888
