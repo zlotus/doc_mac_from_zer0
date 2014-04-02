@@ -1,38 +1,30 @@
 # Python Descriptor
 
 遇到了这个descriptor，Google了下。
-干货都来自[Descriptor HowTo Guide](https://docs.python.org/3.3/howto/descriptor.html) 和 [Python Attributes and Methods](http://www.cafepy.com/article/python_attributes_and_methods/python_attributes_and_methods.html)。
+干货都来自 [Descriptor HowTo Guide](https://docs.python.org/3.3/howto/descriptor.html) 和 [Python Attributes and Methods](http://www.cafepy.com/article/python_attributes_and_methods/python_attributes_and_methods.html)。
 
-## 0. `obj.x`
+## 0. `o.x`
 
-Python如何在复杂的环境（属性、方法、继承）中查找恰当的属性，是每个pyer早晚都得搞明白的问题，这牵扯到一个**变量名**优先级查找机制。
+Python如何在复杂的环境（属性、方法、继承）中查找恰当的属性，是每个pyer早晚都得搞明白的问题，这牵扯到一个`object.attribute`查找优先级。
 
-### attribute lookup order：
+### `__getattribute__()`：
 
-1. 调用`obj.__getattribute__()`，若找到x（可能在继承链中递归查找，类似`-R`），进入2，未找到进入6；
-2. 如果找到的x是一个descriptor，进入3；如果不是descriptor，则返回x；
-3. 如果obj是object，进入4；如果obj是class，进入5；
-4. 用obj代表object，则obj.x会被`object.__getattribute__()`翻译成`type(b).__dict__['x'].__get__(b, type(b))`，按照如下优先级查找：
+1. 如果o（用小写表示实例对象）是一个instance，则调用`object.__getattribute__()`，`o.x`会被看做`type(o).__dict__['x'].__get__(o, type(o))`，根据`x`的特性不同（x是data descriptors、或instance variables、或non-data descriptor），返回值的优先级如下：
 
-    **data descriptors** > instance variables > **non-data descriptors**
+    **data descriptors** > instance variables > **non-data descriptor**
     
-    找到返回x，没找到进入6；
-5. 用OBJ代表class，则OBJ.x会被`type.__getattribute__()`翻译成`B.__dict__['x'].__get__(None, B)`，找到返回，没找到进入n6. 
-6. 以上查找全部落空，如果obj定义有`__getattr__()`则调用并返回x，若未定义则进入7；
-7. `raise AttributeError`
+2. 如果O（用大写表示类对象）是一个class，则调用`type.__getattribute__()`，`O.x`会被看做`O.__dict__['x'].__get__(None, O)`，在这种情况下，优先级可以用Python模拟C语言实现，便于理解，C语言实现更加复杂，见Objects/typeobject.c中的`type_getattro()`：
 
-#### 继承链查找：
+    ```
+    def __getattribute__(self, key):
+        v = object.__getattribute__(self, key)
+        if hasattr(v, '__get__'):
+            return v.__get__(None, self)
+        return v
+    ```
+3. 如果上面的查找失败了，有保险措施，`__getattr__()`负责做最后的尝试，如果没有定义`__getattr__()`则属性查找失败，`raise AttributeError`。
 
-1. 进入`obj.__dict__`，找到返回x，未找到进入2；
-2. 进入`obj.__class__.__dict__`，找到返回x，未找到进入3；
-3. 遍历`obj.__class__.__bases__` (in `__mro__` order) 的 `__dict__`，找到返回x，未找到进入4；
-4. `raise AttributeError`
-
-## 1. `__getattribute__()`
-
-这个方法会拦截所有的变量查找，即便是特殊方法(Special method)也 [**很难**](https://docs.python.org/3.4/reference/datamodel.html?highlight=data model#special-method-lookup)(通过语法特性和内建函数的不明确调用) 绕过`__getattribute__()`
-
-## 2. Descriptor Protocal
+## 1. Descriptor Protocal
 
 只要定义了下面的方法的对象，就成了descriptor：
 
@@ -44,15 +36,23 @@ Python如何在复杂的环境（属性、方法、继承）中查找恰当的�
 
 只定义`__get__()`的对象被称为 **non-data descriptor**。
 
-如果想要 **read-only data descriptor**，就同时定义`__get__()`, `__set__()`，并让`__set__()` `raise AttributeError`即可。
+如果想要 **read-only data descriptor**，则同时定义`__get__()`, `__set__()`，并让`__set__()` `raise AttributeError`即可。
 
-经常用到的`staticmethod()`, `classmethod()`, `property()`都是基于这个协议。
+经常用到的`staticmethod()`、`classmethod()`、`property()`都是基于这个协议。
 
-## 应用
+## 2. 从`__getattribute__()`开始
+
+这个方法负责所有的变量查找，即便是特殊方法(Special method)也 [**很难**](https://docs.python.org/3.3/reference/datamodel.html?highlight=data model#special-method-lookup) (可以通过**语法特性**和**内建函数**的不明确调用) 绕过`__getattribute__()`。
+
+`__getattribute__()`查找对象属性会调用 **descriptor**，重写`__getattribute__()`可能导致 **descriptor** 机制失灵。
+
+`__getattr__()`是`__getattribute__()`的保险机制，即仅在`__getattribute__()`失败时调用（如果定义了的话）。
+
+## 3. 应用
 
 主要（我见过的）用于拦截 attribute access、给对象绑定函数、静态/类方法，从上面的attribute lookup order就可以看出。
 
-### 拦截属性访问
+### 3.1. 拦截属性访问
 
 实现private variable access。使用property()返回一个**data descriptor**，控制所有对`__x`的 get/set/del。
 
@@ -71,7 +71,7 @@ Python如何在复杂的环境（属性、方法、继承）中查找恰当的�
             return obj._value
         value = property(getvalue)
 
-### 绑定函数
+### 3.2. 绑定函数
 
 以前遇到过这种情况，没多想就放过了，现在可以弄清楚了。给实例绑定方法用的就是 **non-data descriptor**。
 
@@ -103,7 +103,7 @@ Python如何在复杂的环境（属性、方法、继承）中查找恰当的�
 
 注意`__get__()`第一个参数的不同。
 
-### 静态方法和类方法
+### 3.3. 静态方法和类方法
 
 静态方法没有状态，自然就不需要`self`这个参数了，对object调用和class调用返回一致。
 
