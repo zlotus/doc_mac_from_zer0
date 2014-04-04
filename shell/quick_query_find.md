@@ -109,6 +109,8 @@ not: `!`
         link(2),  mknod(),  pipe(),  unlink(2),  utime(),  and
         write().
 
+`-newer` `<string>`: 查找比文件`string` 更新的文件；
+
 ## 可执行的操作
 
 `-exec` `<utility>` `[arguments]` `{}`: 对符合条件的文件执行所给的unix `utility` `arguments`命令，而不询问用户是否需要执行该命令。`{}`表示命令的参数即为所找到的每一个文件；命令的末尾必须以`\;`结束；
@@ -148,4 +150,14 @@ find命令在当前目录及其子目录下找到这佯的文件之后，再进�
 在`/usr`中查找文件名为`a*`的文件，并忽略路径`/usr/bin`及`/usr/share`：
 
     find /usr \( -path "/usr/bin" -o -path "/usr/share" \) -prune -o -iname "a*" -print
+
+在当前目录中查找创建时间比README.md新，比python/python_descriptor.md旧的文件：
+
+    find . -newer README.md ! -newer python/python_descriptor.md exec ls -lAG {} \;
+    
+    # touch command is used conjunction with find command, create a file get the ctime at Apl 4, 17:00:
+    touch -t 04041900 timemarker
+    # then use this file as time marker for find:
+    find . -newer timemaker
+
 
