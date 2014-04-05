@@ -155,9 +155,12 @@ find命令在当前目录及其子目录下找到这佯的文件之后，再进�
 
     find . -newer README.md ! -newer python/python_descriptor.md exec ls -lAG {} \;
     
-    # touch command is used conjunction with find command, create a file get the ctime at Apl 4, 17:00:
+    # touch command is used conjunction with find command, create a file get the ctime at Apr 4, 17:00:
     touch -t 04041900 timemarker
     # then use this file as time marker for find:
     find . -newer timemaker
 
+使用`xargs`命令代替`-exec`（-exec有时会因为需要一次性输出太多数据导致参数列溢出）选项，配合find进行使用：
+查找所有普通文件并测试其类别：
+    find / -type f -print | xargs file
 
