@@ -124,13 +124,13 @@
 
 ## 5. 附：关于重定向
 
-0   stdin
-1   stdout
-2   stderr
->   truncate
->>  append
+`0`   stdin
+`1`   stdout
+`2`   stderr
+`>`   truncate
+`>>`  append
 
-/dev/null带有让一切重定向消失的魔法。
+`/dev/null`带有让一切重定向消失的魔法。
 
-2>&1 将错误信息重定向到标准输出
+`2>&1` 将错误信息重定向到标准输出。
 
