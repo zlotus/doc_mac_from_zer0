@@ -125,9 +125,13 @@
 ## 5. 附：关于重定向
 
 `0`   stdin
+
 `1`   stdout
+
 `2`   stderr
+
 `>`   truncate
+
 `>>`  append
 
 `/dev/null`带有让一切重定向消失的魔法。
