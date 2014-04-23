@@ -4,6 +4,8 @@
 
 缓慢填坑。
 
+## `for`...`else`...语句是允许的
+
 ## hashable class
 
 在 **Data Model** 一节，`object.__hash__(self)`下有这么一段说明：
@@ -119,4 +121,23 @@
     ough
     >>> textwrap.wrap(s, 5)
     ['five', 'is en', 'ough']
+
+## `calendar`输出日历
+
+这个工具是又好用又逗，输出的格式非常完美。
+
+其中的函数都会补全周，即除了本月的日子，还包括上个月的最后几天和下个月的头几天，用于补全这个月的第一周和最后一周，很多函数提供参数`firstweekday`用于定义“周”的结构。
+
+这种输出真是让人开眼界^_^：
+
+    >>> import calendar
+    >>> calendar.TextCalendar().prmonth(2014, 4)
+         April 2014
+    Mo Tu We Th Fr Sa Su
+        1  2  3  4  5  6
+     7  8  9 10 11 12 13
+    14 15 16 17 18 19 20
+    21 22 23 24 25 26 27
+    28 29 30
+
 
