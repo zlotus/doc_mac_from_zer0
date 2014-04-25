@@ -23,11 +23,13 @@
 
 注意到，对于重复的键，ChainMap会顺序查找包含的字典，找到键会立刻返回值，所以当访问`cm[3]`的时候，ChainMap返回d1的查找结果。
 
+而访问`mc[3]`的时候会返回d2的结果：
+
     >>> mc = collections.ChainMap(d2, d1)
     >>> mc[3]
     'f'
 
-而访问`mc[3]`的时候会返回d2的结果。
+使用ChainMap对多个字典进行合并，比把一个字典的内容`update()`到另一个字典中高效很多。
 
     >>> id(d1[1])
     4393542968
@@ -36,9 +38,7 @@
     >>> id(cm[1])
     4393542968
 
-使用ChainMap对多个字典进行合并，比把一个字典的内容`update()`到另一个字典中高效很多。
-
-上面是ChainMap的合并动作，对于增删改动作而言，默认是操作第一个字典。
+ChainMap的合并动作就说到这，对于增删改动作而言，默认是操作第一个字典。
 
 不过对于ChainMap的这种默认动作，可以很容易通过子类实现：
 
@@ -121,7 +121,7 @@ deque是线程安全的，在队列两端的操作复杂度为O(1)。
 
 但是，虽然deque在队列两端操作很快，但是对于中间元素的操作却没那么高效了，所以对于随机访问队列的场景而言，还是用list吧。
 
-deque支持list的大多数操作，如：正负向索引、迭代器、序列化、反转、深浅拷贝、`in`运算符等。不过deque**不支持**list常用的切片操作(slice)。
+deque支持list的大多数操作，如：正负向索引、迭代器、序列化、反转、深浅拷贝、`in`运算符等。不过deque **不支持** list常用的切片操作(slice)。
 
     >>> import timeit
     >>> timeit.timeit('for i in range(10000): d.append(i)', setup='from collections import deque; d = deque()', number=1)
@@ -146,6 +146,17 @@ deque支持list的大多数操作，如：正负向索引、迭代器、序列�
 
 deque中的`rotate(n)`是list中没有的，等价于把最后n个元素添加到队头，若n为负数，则是从头取元素添加至队尾。等价于`d.appendleft(d.pop())`。
 
+
+## defaultdict
+
+一个dict的子类，只是对访问不存在键时有额外的操作，通过参数`default_factory`指定。
+
+dict在访问不存在键时(d[undef])，会`raise KeyError`；
+
+defaultdict在被访问不存在键时(d[undef])，若未指定(`default_factory=None`)，则与dict一样`raise KeyError`，若指定(`default_factory=func`)，则利用指定函数新建键值(d[undef] = func())。
+
+如，用来统计单词出现位置：
+
     >>> from collections import defaultdict
     >>> s = "the quick brown fox jumps over the lazy dog"
     >>> words = s.split()
@@ -154,5 +165,116 @@ deque中的`rotate(n)`是list中没有的，等价于把最后n个元素添加�
     ...     location[n].append(m)
     >>> location
     defaultdict(<class 'list'>, {'quick': [1], 'the': [0, 6], 'fox': [3], 'jumps': [4], 'brown': [2], 'dog': [8], 'lazy': [7], 'over': [5]})
+
+## namedtuple
+
+namedtuple是一个Factory Function，其返回值是一个tuple的子类，类名由参数`typename`指定；初始化参数由`field_names`指定。
+
+如果我们在读取格式化文件或访问数据库时，不想新建类来维护每一行数据，就可以用namedtuple偷个懒。
+
+    EmployeeRecord = namedtuple('EmployeeRecord', 'name, age, title, department, paygrade')
+    
+    import csv
+    for emp in map(EmployeeRecord._make, csv.reader(open("employees.csv", "rb"))):
+        print(emp.name, emp.title)
+    
+    import sqlite3
+    conn = sqlite3.connect('/companydata')
+    cursor = conn.cursor()
+    cursor.execute('SELECT name, age, title, department, paygrade FROM employees')
+    for emp in map(EmployeeRecord._make, cursor.fetchall()):
+        print(emp.name, emp.title)
+
+如果打开`verbose`开关或访问_source属性，会得到返回类型的代码：
+
+>>> Point = collections.namedtuple('Point', ['x', 'y'], verbose=True)
+from builtins import property as _property, tuple as _tuple
+from operator import itemgetter as _itemgetter
+from collections import OrderedDict
+
+class Point(tuple):
+    'Point(x, y)'
+
+    __slots__ = ()
+
+    _fields = ('x', 'y')
+
+    def __new__(_cls, x, y):
+        'Create new instance of Point(x, y)'
+        return _tuple.__new__(_cls, (x, y))
+
+    @classmethod
+    def _make(cls, iterable, new=tuple.__new__, len=len):
+        'Make a new Point object from a sequence or iterable'
+        result = new(cls, iterable)
+        if len(result) != 2:
+            raise TypeError('Expected 2 arguments, got %d' % len(result))
+        return result
+
+    def _replace(_self, **kwds):
+        'Return a new Point object replacing specified fields with new values'
+        result = _self._make(map(kwds.pop, ('x', 'y'), _self))
+        if kwds:
+            raise ValueError('Got unexpected field names: %r' % list(kwds))
+        return result
+
+    def __repr__(self):
+        'Return a nicely formatted representation string'
+        return self.__class__.__name__ + '(x=%r, y=%r)' % self
+
+    @property
+    def __dict__(self):
+        'A new OrderedDict mapping field names to their values'
+        return OrderedDict(zip(self._fields, self))
+
+    def _asdict(self):
+        '''Return a new OrderedDict which maps field names to their values.
+           This method is obsolete.  Use vars(nt) or nt.__dict__ instead.
+        '''
+        return self.__dict__
+
+    def __getnewargs__(self):
+        'Return self as a plain tuple.  Used by copy and pickle.'
+        return tuple(self)
+
+    def __getstate__(self):
+        'Exclude the OrderedDict from pickling'
+        return None
+
+    x = _property(_itemgetter(0), doc='Alias for field number 0')
+
+    y = _property(_itemgetter(1), doc='Alias for field number 1')
+
+看到这个，就可以清楚明了的操作namedtuple返回的类了。
+
+新建对象：
+
+    >>> p = Point(2, 4)
+    >>> Point(*[4, 8])
+    Point(x=4, y=8)
+    >>> Point(**{'x': 5, 'y': 10})
+    Point(x=5, y=10)
+
+通过内建函数`vars()`获得类型的OrderedDict：
+
+    >>> vars(p)
+    OrderedDict([('x', 2), ('y', 4)])
+
+通过`_make()`新建类型：
+
+    >>> Point._make([3, 6])
+    Point(x=3, y=6)
+
+通过`_replace`修改成员：
+
+    >>> p._replace(y=8)
+    Point(x=2, y=8)
+
+通过`_fields`查看成员列表：
+
+    >>> p._fields
+    ('x', 'y')
+
+需要注意的是，namedtuple返回的是tuple的子类，所以tuple支持的操作对于namdtuple来说是同样适用的。
 
 
