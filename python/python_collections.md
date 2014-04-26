@@ -187,67 +187,67 @@ namedtuple是一个Factory Function，其返回值是一个tuple的子类，类�
 
 如果打开`verbose`开关或访问_source属性，会得到返回类型的代码：
 
->>> Point = collections.namedtuple('Point', ['x', 'y'], verbose=True)
-from builtins import property as _property, tuple as _tuple
-from operator import itemgetter as _itemgetter
-from collections import OrderedDict
-
-class Point(tuple):
-    'Point(x, y)'
-
-    __slots__ = ()
-
-    _fields = ('x', 'y')
-
-    def __new__(_cls, x, y):
-        'Create new instance of Point(x, y)'
-        return _tuple.__new__(_cls, (x, y))
-
-    @classmethod
-    def _make(cls, iterable, new=tuple.__new__, len=len):
-        'Make a new Point object from a sequence or iterable'
-        result = new(cls, iterable)
-        if len(result) != 2:
-            raise TypeError('Expected 2 arguments, got %d' % len(result))
-        return result
-
-    def _replace(_self, **kwds):
-        'Return a new Point object replacing specified fields with new values'
-        result = _self._make(map(kwds.pop, ('x', 'y'), _self))
-        if kwds:
-            raise ValueError('Got unexpected field names: %r' % list(kwds))
-        return result
-
-    def __repr__(self):
-        'Return a nicely formatted representation string'
-        return self.__class__.__name__ + '(x=%r, y=%r)' % self
-
-    @property
-    def __dict__(self):
-        'A new OrderedDict mapping field names to their values'
-        return OrderedDict(zip(self._fields, self))
-
-    def _asdict(self):
-        '''Return a new OrderedDict which maps field names to their values.
-           This method is obsolete.  Use vars(nt) or nt.__dict__ instead.
-        '''
-        return self.__dict__
-
-    def __getnewargs__(self):
-        'Return self as a plain tuple.  Used by copy and pickle.'
-        return tuple(self)
-
-    def __getstate__(self):
-        'Exclude the OrderedDict from pickling'
-        return None
-
-    x = _property(_itemgetter(0), doc='Alias for field number 0')
-
-    y = _property(_itemgetter(1), doc='Alias for field number 1')
+    >>> Point = collections.namedtuple('Point', ['x', 'y'], verbose=True)
+    from builtins import property as _property, tuple as _tuple
+    from operator import itemgetter as _itemgetter
+    from collections import OrderedDict
+    
+    class Point(tuple):
+        'Point(x, y)'
+    
+        __slots__ = ()
+    
+        _fields = ('x', 'y')
+    
+        def __new__(_cls, x, y):
+            'Create new instance of Point(x, y)'
+            return _tuple.__new__(_cls, (x, y))
+    
+        @classmethod
+        def _make(cls, iterable, new=tuple.__new__, len=len):
+            'Make a new Point object from a sequence or iterable'
+            result = new(cls, iterable)
+            if len(result) != 2:
+                raise TypeError('Expected 2 arguments, got %d' % len(result))
+            return result
+    
+        def _replace(_self, **kwds):
+            'Return a new Point object replacing specified fields with new values'
+            result = _self._make(map(kwds.pop, ('x', 'y'), _self))
+            if kwds:
+                raise ValueError('Got unexpected field names: %r' % list(kwds))
+            return result
+    
+        def __repr__(self):
+            'Return a nicely formatted representation string'
+            return self.__class__.__name__ + '(x=%r, y=%r)' % self
+    
+        @property
+        def __dict__(self):
+            'A new OrderedDict mapping field names to their values'
+            return OrderedDict(zip(self._fields, self))
+    
+        def _asdict(self):
+            '''Return a new OrderedDict which maps field names to their values.
+               This method is obsolete.  Use vars(nt) or nt.__dict__ instead.
+            '''
+            return self.__dict__
+    
+        def __getnewargs__(self):
+            'Return self as a plain tuple.  Used by copy and pickle.'
+            return tuple(self)
+    
+        def __getstate__(self):
+            'Exclude the OrderedDict from pickling'
+            return None
+    
+        x = _property(_itemgetter(0), doc='Alias for field number 0')
+    
+        y = _property(_itemgetter(1), doc='Alias for field number 1')
 
 看到这个，就可以清楚明了的操作namedtuple返回的类了。
 
-新建对象：
+新建实例：
 
     >>> p = Point(2, 4)
     >>> Point(*[4, 8])
@@ -255,12 +255,12 @@ class Point(tuple):
     >>> Point(**{'x': 5, 'y': 10})
     Point(x=5, y=10)
 
-通过内建函数`vars()`获得类型的OrderedDict：
+通过内建函数`vars()`获得实例的OrderedDict：
 
     >>> vars(p)
     OrderedDict([('x', 2), ('y', 4)])
 
-通过`_make()`新建类型：
+通过`_make()`新建实例：
 
     >>> Point._make([3, 6])
     Point(x=3, y=6)
@@ -277,4 +277,17 @@ class Point(tuple):
 
 需要注意的是，namedtuple返回的是tuple的子类，所以tuple支持的操作对于namdtuple来说是同样适用的。
 
+## OrderedDict
 
+看名字就能知道这个类型的功能，就是一个记录了元素插入顺序dict。
+
+特有的方法有两个：`move_to_end(key, last=True)`, `popitem(last=True)`
+
+    >>> d = {'banana': 3, 'apple':4, 'pear': 1, 'orange': 2}
+    >>> od = OrderedDict(sorted(d.items(), key=lambda t: t[1]))    # OrderedDict([('pear', 1), ('orange', 2), ('banana', 3), ('apple', 4)])
+    >>> od.move_to_end('pear')                                     # OrderedDict([('orange', 2), ('banana', 3), ('apple', 4), ('pear', 1)])
+    >>> od.move_to_end('pear', last=False)                         # OrderedDict([('pear', 1), ('orange', 2), ('banana', 3), ('apple', 4)])
+    >>> od.popitem()
+    ('apple', 4)
+    >>> od.popitem(last=False)
+    ('pear', 1)
