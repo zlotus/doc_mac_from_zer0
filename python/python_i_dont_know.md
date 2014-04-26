@@ -140,4 +140,9 @@
     21 22 23 24 25 26 27
     28 29 30
 
+## `collections.abc`测试容器支持的功能
+
+    size = None
+    if isinstance(myvar, collections.abc.Sized):
+        size = len(myvar)
 
