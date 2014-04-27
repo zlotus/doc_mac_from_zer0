@@ -146,3 +146,14 @@
     if isinstance(myvar, collections.abc.Sized):
         size = len(myvar)
 
+## 利用`heapq`排序
+
+    >>> def heapqsort(iterable):
+    ...     h = []
+    ...     for value in iterable:
+    ...         heapq.heappush(h, value)
+    ...     return [heapq.heappop(h) for i in range(len(h))]
+    >>> l = [random.randrange(1, 10) for x in range(10)]
+    >>> heapqsort(l)
+    [3, 4, 6, 6, 7, 7, 8, 8, 9, 9]
+
