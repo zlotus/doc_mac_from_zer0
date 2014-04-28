@@ -98,3 +98,75 @@ bisect是bisection的缩写，也就是它使用二分法，经常被用来在�
 
     >>> bisect.insort_right(a, (550, 1200))     # [(0, 100), (150, 220), (250, 400), (399, 450), (500, 1000), (550, 1200)]
 
+## weakref
+
+先看看什么是strong reference：
+
+    >>> class Foo(object):
+    ...     def __init__(self):
+    ...         self.obj = None
+    ...         print('created')
+    ...  
+    ...     def __del__(self):
+    ...         print ('destroyed')
+    ...  
+    ...     def show(self):
+    ...         print(self.obj)
+    ...  
+    ...     def store(self, obj):
+    ...         self.obj = obj
+    ... 
+    >>> a = Foo()
+    created
+    >>> id(a)
+    4429650072
+    >>> b = a
+    >>> id(b)
+    4429650072
+    >>> del b
+    >>> del a
+    destroyed
+
+这里的a, b是Foo()的同一个实例的strong reference，只删除b并不会导致这个实例对象被删除，只有当该对象的所有strong reference都被删除时，这个对象才会被回收。
+
+现代语言的垃圾回收会判定一个对象的引用类型，若该对象仅剩weak reference时，对象会被回收。
+
+可以通过weakref创建对象的weak reference：
+
+>>> import weakref
+>>> a = Foo()           # <Foo object at 0x10808a630>
+created
+>>> b = weakref.ref(a)  # <weakref at 0x108674138; to 'Foo' at 0x10808a630>
+
+通过`b()`可以得到该对象的临时strong reference：
+
+>>> a == b()
+True
+>>> b().show()
+None
+
+此时删除a，即该对象的strong reference，对象会被立刻删除：
+
+>>> del a
+destroyed
+
+这时，weak reference不再起作用：
+
+>>> b() is None
+True
+
+使用`weakref.proxy()`也可以做同样的工作，看起来更顺眼：
+
+>>> a = Foo()
+created
+>>> b = weakref.proxy(a)
+>>> b.store('fish')
+>>> b.show()
+fish
+>>> del a
+destroyed
+>>> b.show()
+Traceback (most recent call last):
+ReferenceError: weakly-referenced object no longer exists
+
+
