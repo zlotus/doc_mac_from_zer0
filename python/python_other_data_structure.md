@@ -133,40 +133,229 @@ bisect是bisection的缩写，也就是它使用二分法，经常被用来在�
 
 可以通过weakref创建对象的weak reference：
 
->>> import weakref
->>> a = Foo()           # <Foo object at 0x10808a630>
-created
->>> b = weakref.ref(a)  # <weakref at 0x108674138; to 'Foo' at 0x10808a630>
+    >>> import weakref
+    >>> a = Foo()           # <Foo object at 0x10808a630>
+    created
+    >>> b = weakref.ref(a)  # <weakref at 0x108674138; to 'Foo' at 0x10808a630>
 
 通过`b()`可以得到该对象的临时strong reference：
 
->>> a == b()
-True
->>> b().show()
-None
+    >>> a == b()
+    True
+    >>> b().show()
+    None
 
 此时删除a，即该对象的strong reference，对象会被立刻删除：
 
->>> del a
-destroyed
+    >>> del a
+    destroyed
 
 这时，weak reference不再起作用：
 
->>> b() is None
-True
+    >>> b() is None
+    True
 
 使用`weakref.proxy()`也可以做同样的工作，看起来更顺眼：
 
->>> a = Foo()
-created
->>> b = weakref.proxy(a)
->>> b.store('fish')
->>> b.show()
-fish
->>> del a
-destroyed
->>> b.show()
-Traceback (most recent call last):
-ReferenceError: weakly-referenced object no longer exists
+    >>> a = Foo()
+    created
+    >>> b = weakref.proxy(a)
+    >>> b.store('fish')
+    >>> b.show()
+    fish
+    >>> del a
+    destroyed
+    >>> b.show()
+    Traceback (most recent call last):
+    ReferenceError: weakly-referenced object no longer exists
+
+## types
+
+除了提供动态创建类的函数`types.new_class(name, bases=(), kwds=None, exec_body=None)`以外，还提定义了一些被Python解释器使用，但是没有在内建类型中显示定义（如int, str）的类型：
+
+    >>> pprint.pprint([t for t in dir(types) if not '_' in t])
+    ['BuiltinFunctionType',
+     'BuiltinMethodType',
+     'CodeType',
+     'DynamicClassAttribute',
+     'FrameType',
+     'FunctionType',
+     'GeneratorType',
+     'GetSetDescriptorType',
+     'LambdaType',
+     'MappingProxyType',
+     'MemberDescriptorType',
+     'MethodType',
+     'ModuleType',
+     'SimpleNamespace',
+     'TracebackType']
 
 
+## copy
+
+Python中的赋值操作只会把对象绑定到一个名字上（*引用*），不会复制该对象。
+
+有时我们想要复制一个可变容器，或是容器中包含可变元素时，我们是想要得到一个全新的容器，这样就可以修改新容器中的元素而不对原来的容器及其对象产生影响了。这是我们需要使用到copy模块。
+
+shallow copy与deep copy只在compound objects(一个包含了其他对象的对象，如list、class、instance)上体现差异：
+
+* shallow copy会创建一个新的compound objects，并将原对象中的其他对象以*引用*的方式插入这个新的compound objects。
+
+* deep copy会创建一个新的compound object，并将源对象中的其他对象以*复制*的方式递归的插入这个新的 compound object。
+
+试验一下：
+
+    >>> import copy
+    >>> a = [1, 2, 3]
+    >>> b = [4, 5, 6]
+    >>> c = [a, b]            # compound object
+    >>> d = c                 # assignment, nothing is new
+    >>> id(c) == id(d)
+    True
+    >>> id(c[0]) == id(d[0])
+    True
+    >>> e = copy.copy(c)      # shallow copy, compound object itself is new
+    >>> id(c) == id(e)
+    False
+    >>>  id(c[0]) == id(e[0])
+    >>> id(c[0]) == id(e[0])
+    True
+    >>> f = copy.deepcopy(c)  # deep copy, everything is new
+    >>> id(c) == id(f)
+    False
+    >>> id(c[0]) == id(f[0])
+    False
+
+## pprint
+
+让输出变得更好看。
+
+主要是用于当list、dict等集合递归包含了很多其他的容器类型时，用缩进表示递归层级，使得输出错落有致。
+
+    import requests
+    r = requests.get('http://pypi.python.org/pypi/Twisted/json')
+    pprint.pprint(r.text)
+    >>> pprint.pprint(project_info)
+    {'info': {'_pypi_hidden': False,
+              '_pypi_ordering': 125,
+              'author': 'Glyph Lefkowitz',
+              'author_email': 'glyph@twistedmatrix.com',
+              'bugtrack_url': '',
+              'cheesecake_code_kwalitee_id': None,
+              'cheesecake_documentation_id': None,
+              'cheesecake_installability_id': None,
+              'classifiers': ['Programming Language :: Python :: 2.6',
+                              'Programming Language :: Python :: 2.7',
+                              'Programming Language :: Python :: 2 :: Only'],
+              'description': 'An extensible framework for Python programming, '
+                             'with special focus\r\n'
+                             'on event-based network programming and '
+                             'multiprotocol integration.',
+              'docs_url': '',
+              'download_url': 'UNKNOWN',
+              'home_page': 'http://twistedmatrix.com/',
+              'keywords': '',
+              'license': 'MIT',
+              'maintainer': '',
+              'maintainer_email': '',
+              'name': 'Twisted',
+              'package_url': 'http://pypi.python.org/pypi/Twisted',
+              'platform': 'UNKNOWN',
+              'release_url': 'http://pypi.python.org/pypi/Twisted/12.3.0',
+              'requires_python': None,
+              'stable_version': None,
+              'summary': 'An asynchronous networking framework written in Python',
+              'version': '12.3.0'},
+     'urls': [{'comment_text': '',
+               'downloads': 71844,
+               'filename': 'Twisted-12.3.0.tar.bz2',
+               'has_sig': False,
+               'md5_digest': '6e289825f3bf5591cfd670874cc0862d',
+               'packagetype': 'sdist',
+               'python_version': 'source',
+               'size': 2615733,
+               'upload_time': '2012-12-26T12:47:03',
+               'url': 'https://pypi.python.org/packages/source/T/Twisted/Twisted-12.3.0.tar.bz2'},
+              {'comment_text': '',
+               'downloads': 5224,
+               'filename': 'Twisted-12.3.0.win32-py2.7.msi',
+               'has_sig': False,
+               'md5_digest': '6b778f5201b622a5519a2aca1a2fe512',
+               'packagetype': 'bdist_msi',
+               'python_version': '2.7',
+               'size': 2916352,
+               'upload_time': '2012-12-26T12:48:15',
+               'url': 'https://pypi.python.org/packages/2.7/T/Twisted/Twisted-12.3.0.win32-py2.7.msi'}]}
+
+也可以指定递归层数：
+
+    >>> pprint.pprint(project_info, depth=2)
+    {'info': {'_pypi_hidden': False,
+              '_pypi_ordering': 125,
+              'author': 'Glyph Lefkowitz',
+              'author_email': 'glyph@twistedmatrix.com',
+              'bugtrack_url': '',
+              'cheesecake_code_kwalitee_id': None,
+              'cheesecake_documentation_id': None,
+              'cheesecake_installability_id': None,
+              'classifiers': [...],
+              'description': 'An extensible framework for Python programming, '
+                             'with special focus\r\n'
+                             'on event-based network programming and '
+                             'multiprotocol integration.',
+              'docs_url': '',
+              'download_url': 'UNKNOWN',
+              'home_page': 'http://twistedmatrix.com/',
+              'keywords': '',
+              'license': 'MIT',
+              'maintainer': '',
+              'maintainer_email': '',
+              'name': 'Twisted',
+              'package_url': 'http://pypi.python.org/pypi/Twisted',
+              'platform': 'UNKNOWN',
+              'release_url': 'http://pypi.python.org/pypi/Twisted/12.3.0',
+              'requires_python': None,
+              'stable_version': None,
+              'summary': 'An asynchronous networking framework written in Python',
+              'version': '12.3.0'},
+     'urls': [{...}, {...}]}
+
+或是设置每行长度最大值，但是当遇到超过设置长度的不可分割对象出现时，设置的长度会被超出：
+
+    >>> pprint.pprint(project_info, depth=2, width=50)
+    {'info': {'_pypi_hidden': False,
+              '_pypi_ordering': 125,
+              'author': 'Glyph Lefkowitz',
+              'author_email': 'glyph@twistedmatrix.com',
+              'bugtrack_url': '',
+              'cheesecake_code_kwalitee_id': None,
+              'cheesecake_documentation_id': None,
+              'cheesecake_installability_id': None,
+              'classifiers': [...],
+              'description': 'An extensible '
+                             'framework for '
+                             'Python programming, '
+                             'with special '
+                             'focus\r\n'
+                             'on event-based '
+                             'network programming '
+                             'and multiprotocol '
+                             'integration.',
+              'docs_url': '',
+              'download_url': 'UNKNOWN',
+              'home_page': 'http://twistedmatrix.com/',
+              'keywords': '',
+              'license': 'MIT',
+              'maintainer': '',
+              'maintainer_email': '',
+              'name': 'Twisted',
+              'package_url': 'http://pypi.python.org/pypi/Twisted',
+              'platform': 'UNKNOWN',
+              'release_url': 'http://pypi.python.org/pypi/Twisted/12.3.0',
+              'requires_python': None,
+              'stable_version': None,
+              'summary': 'An asynchronous '
+                         'networking framework '
+                         'written in Python',
+              'version': '12.3.0'},
+     'urls': [{...}, {...}]}
