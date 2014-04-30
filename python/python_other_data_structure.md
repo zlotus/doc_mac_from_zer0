@@ -359,3 +359,119 @@ shallow copy与deep copy只在compound objects(一个包含了其他对象的对
                          'written in Python',
               'version': '12.3.0'},
      'urls': [{...}, {...}]}
+
+## enum
+
+这是Python3.4新加入的模块。
+
+其中提供了两个class：`Enum`, `IntEnum`，和一个decorator：`unique()`。
+
+### 新建Enum
+
+新建Enum与新建类一样，可读性强：
+
+    >>> from enum import Enum
+    >>> class Color(Enum):
+    ...     red = 1
+    ...     green = 2
+    ...     blue = 3
+    ...
+
+同样具有可读性的输出表达：
+
+    >>> print(Color.red)
+    Color.red
+
+使用`repr`得到更多信息：
+
+    >>> print(repr(Color.red))
+    <Color.red: 1>
+
+使用`type`检视Enum的成员，成员的type是其所属的Enum类型：
+
+    >>> type(Color.red)
+    <enum 'Color'>
+    >>> isinstance(Color.green, Color)
+    True
+
+Enum成员都具有一个名为`name`的属性：
+
+    >>> print(Color.red.name)
+    red
+
+Enum自然支持iteration：
+
+    >>> class Shake(Enum):
+    ...     vanilla = 7
+    ...     chocolate = 4
+    ...     cookies = 9
+    ...     mint = 3
+    ...
+    >>> for shake in Shake:
+    ...     print(shake)
+    ...
+    Shake.vanilla
+    Shake.chocolate
+    Shake.cookies
+    Shake.mint
+
+Enum成员是hashable的，所以可以作为dict的键或是成为set成员：
+
+    >>> apples = {}
+    >>> apples[Color.red] = 'red delicious'
+    >>> apples[Color.green] = 'granny smith'
+    >>> apples == {Color.red: 'red delicious', Color.green: 'granny smith'}
+    True
+
+### 程序化访问Enum成员
+
+比如当我们不知道一个Enum类中有那些成员，所以无法使用诸如`Color.red`这种写法时：
+
+    >>> Color(1)
+    <Color.red: 1>
+    >>> Color(3)
+    <Color.blue: 3>
+
+也可以通过成员名称访问，就像使用dict一样：
+
+    >>> Color['red']
+    <Color.red: 1>
+    >>> Color['green']
+    <Color.green: 2>
+
+或是直接访问成员的`name`和`value`属性：
+
+    >>> member = Color.red
+    >>> member.name
+    'red'
+    >>> member.value
+    1
+
+### 重复的成员和重复的值
+
+Enum不允许定义重复的成员：
+
+    >>> class Shape(Enum):
+    ...     square = 2
+    ...     square = 3
+    ...
+    Traceback (most recent call last):
+    ...
+    TypeError: Attempted to reuse key: 'square'
+
+不过Enum是允许定义重复的值的，只是在访问时需要注意，不论是通过成员名称访问还是通过成员值访问，Enum只返回先定义的那个成员：
+
+    >>> class Shape(Enum):
+    ...     square = 2
+    ...     diamond = 1
+    ...     circle = 3
+    ...     alias_for_square = 2
+    ...
+    >>> Shape.square
+    <Shape.square: 2>
+    >>> Shape.alias_for_square
+    <Shape.square: 2>
+    >>> Shape(2)
+    <Shape.square: 2>
+
+
