@@ -474,4 +474,265 @@ Enum不允许定义重复的成员：
     >>> Shape(2)
     <Shape.square: 2>
 
+### 确保值的唯一性
+
+尽管从上面我们可以看到，Enum是允许重复值出现的，但如果我们不希望Enum中同一个值有两个别名时，可以使用`@enum.unique`。这个decorator能够检查Enum中是否有重复的值，如果有则会`raise ValueError`：
+
+    >>> from enum import Enum, unique
+    >>> @unique
+    ... class Mistake(Enum):
+    ...     one = 1
+    ...     two = 2
+    ...     three = 3
+    ...     four = 3
+    ...
+    Traceback (most recent call last):
+    ...
+    ValueError: duplicate values found in <enum 'Mistake'>: four -> three
+
+### 迭代
+
+Enum在迭代的时候是排除别名的，也就是对同一个值来说，最先定义在Enum中的成员才会出现，在`Shape`这个例子中，`alias_for_square`是不会出现在iteration中的：
+
+    >>> list(Shape)
+    [<Shape.square: 2>, <Shape.diamond: 1>, <Shape.circle: 3>]
+
+`__member__`属性是一个OrderedDict，它包含了所以的Enum成员，包括同一个值出现的别名，在`Shape`中，`alias_for_square`将出现在`__member__`中：
+
+    >>> for name, member in Shape.__members__.items():
+    ...     name, member
+    ...
+    ('square', <Shape.square: 2>)
+    ('diamond', <Shape.diamond: 1>)
+    ('circle', <Shape.circle: 3>)
+    ('alias_for_square', <Shape.square: 2>)
+
+`__member__`的程序化访问：
+
+    >>> [name for name, member in Shape.__members__.items() if member.name != name]
+    ['alias_for_square']
+
+## 比较
+
+Enum类型可以使用`is`运算符比较成员：
+
+    >>> Color.red is Color.red
+    True
+    >>> Color.red is Color.blue
+    False
+    >>> Color.red is not Color.blue
+    True
+
+Enum不能比较大小，因为Enum成员并不是Int类型（另有`IntEnum`类型实现类似功能）：
+
+    >>> Color.red < Color.blue
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    TypeError: unorderable types: Color() < Color()
+
+不过Enum的成员可以做等价比较：
+
+    >>> Color.blue == Color.red
+    False
+    >>> Color.blue != Color.red
+    True
+    >>> Color.blue == Color.blue
+    True
+
+注意，Enum成员和非Enum成员作比较时结果始终是不相等（`IntEnum`类专门用来做Int相关的操作）：
+
+    >>> Color.blue == 2
+    False
+
+### 允许的成员及属性
+
+上面的例子都使用Int做成员值，因为Int是常用且简便的，但这并不意味着强制使用Int。Enum并不关心值的类型，值的类型有很大的随意性。
+
+Enum是一个Python类，所以和其他类一样可以定义方法或特殊方法：
+
+    >>> class Mood(Enum):
+    ...     funky = 1
+    ...     happy = 3
+    ...
+    ...     def describe(self):
+    ...         # self is the member here
+    ...         return self.name, self.value
+    ...
+    ...     def __str__(self):
+    ...         return 'my custom str! {0}'.format(self.value)
+    ...
+    ...     @classmethod
+    ...     def favorite_mood(cls):
+    ...         # cls here is the enumeration
+    ...         return cls.happy
+    ...
+    >>> Mood.favorite_mood()
+    <Mood.happy: 3>
+    >>> Mood.happy.describe()
+    ('happy', 3)
+    >>> str(Mood.funky)
+    'my custom str! 1'
+
+注意，形如`_sunder_`（前后各一个下划线）的名称为Enum的保留项，不允许使用这类名称；其他所有在Enum中定义的属性都会成为Enum的成员，形如`__dunder__`（前后各两个下划线）的名称和descriptor是例外（方法也是descriptor，详见另一篇文章：[python_descriptor](https://github.com/zlotus/doc_mac_from_zer0/blob/master/python/python_descriptor.md)）
+
+如果Enum中定义了`__new__()`或`__init__()`，不论Enum成员值是什么，这个值都会被当做参数传入这两个特殊方法：
+
+    >>> class Planet(Enum):
+    ...     MERCURY = (3.303e+23, 2.4397e6)
+    ...     VENUS   = (4.869e+24, 6.0518e6)
+    ...     EARTH   = (5.976e+24, 6.37814e6)
+    ...     MARS    = (6.421e+23, 3.3972e6)
+    ...     JUPITER = (1.9e+27,   7.1492e7)
+    ...     SATURN  = (5.688e+26, 6.0268e7)
+    ...     URANUS  = (8.686e+25, 2.5559e7)
+    ...     NEPTUNE = (1.024e+26, 2.4746e7)
+    ...     def __init__(self, mass, radius):
+    ...         self.mass = mass       # in kilograms
+    ...         self.radius = radius   # in meters
+    ...     @property
+    ...     def surface_gravity(self):
+    ...         # universal gravitational constant  (m3 kg-1 s-2)
+    ...         G = 6.67300E-11
+    ...         return G * self.mass / (self.radius * self.radius)
+    ...
+    >>> Planet.EARTH.value
+    (5.976e+24, 6378140.0)
+    >>> Planet.EARTH.surface_gravity
+    9.802652743337129
+
+### Enum的继承限制
+
+只有在一个Enum类中不包含任何成员时，这个类才可以作为父类，所以这样的代码是不可以的：
+
+    >>> class MoreColor(Color):
+    ...     pink = 17
+    ...
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot extend enumerations
+
+但可以这样：
+
+    >>> class Foo(Enum):
+    ...     def some_behavior(self):
+    ...         pass
+    ...
+    >>> class Bar(Foo):
+    ...     happy = 1
+    ...     sad = 2
+    ...
+
+### Python持久化
+
+可持久化的Enum类必须定义在模块顶层，因为解包时需要保证他们是可导入的。
+
+    >>> from test.test_enum import Fruit
+    >>> from pickle import dumps, loads
+    >>> Fruit.tomato is loads(dumps(Fruit.tomato))
+    True
+
+通过定义`__reduce_ex__()`可以改变pickle/unpickle行为。
+
+### 函数式API
+
+Enum类是可调用的：
+
+    >>> Animal = Enum('Animal', 'ant bee cat dog')
+    >>> Animal
+    <enum 'Animal'>
+    >>> Animal.ant
+    <Animal.ant: 1>
+    >>> Animal.ant.value
+    1
+    >>> list(Animal)
+    [<Animal.ant: 1>, <Animal.bee: 2>, <Animal.cat: 3>, <Animal.dog: 4>]
+
+类似`namedtuple`，第一个参数是Enum的类名；
+
+第二个参数是Enum成员的来源，这个来源可以是：
+
+* 一个包含成员名称的字符串，各成员名间使用空格隔开；
+* 一个成员名称的序列；
+* 一个2元组的序列，元组形式为键-值；
+* 一个映射，比如dict；
+
+后两个来源能够给Enum成员的值进行自由赋值，其他的来源会给成员赋上从1开始自增的整数值。
+
+调用`Enum()`返回一个新的Enum子类，上面的代码等同于：
+
+    >>> class Animals(Enum):
+    ...     ant = 1
+    ...     bee = 2
+    ...     cat = 3
+    ...     dog = 4
+    ...
+
+之所以从1开始自增是因为从布尔值的角度看，`0==False`，而所有Enum成员应为`True`。
+
+持久化使用函数式创建的Enum类型会因为frame stack实现的细节会尝试找到该Enum类是创建在那个模块中的（如：使用在另一个模块中的工具函数或使用IronPython和Jython会导致失败）。解决方法是明确指定模块名：
+
+    >>> Animals = Enum('Animals', 'ant bee cat dog', module=__name__)
+
+如果没指定模块，且Enum尝试找出模块未果时，返回的新的Enum子类将不可持久化（unpicklable）
+
+### Enum子类：IntEnum
+
+IntEnum也是Int的子类，所以IntEnum的成员可以与整数做比较。同样的，不同类型的IntEnum类成员可以互相做比较：
+
+    >>> enum.IntEnum.__mro__
+    (<enum 'IntEnum'>, <class 'int'>, <enum 'Enum'>, <class 'object'>)
+    >>> from enum import IntEnum
+    >>> class Shape(IntEnum):
+    ...     circle = 1
+    ...     square = 2
+    ...
+    >>> class Request(IntEnum):
+    ...     post = 1
+    ...     get = 2
+    ...
+    >>> Shape == 1
+    False
+    >>> Shape.circle == 1
+    True
+    >>> Shape.circle == Request.post
+    True
+
+但是，IntEnum类型成员仍然不能与Enum类型成员做比较：
+
+    >>> class Shape(IntEnum):
+    ...     circle = 1
+    ...     square = 2
+    ...
+    >>> class Color(Enum):
+    ...     red = 1
+    ...     green = 2
+    ...
+    >>> Shape.circle == Color.red
+    False
+
+IntEnum值的行为都类似整型：
+
+>>> int(Shape.circle)
+1
+>>> ['a', 'b', 'c'][Shape.circle]
+'b'
+>>> [i for i in range(Shape.square)]
+[0, 1]
+
+注意，在大多数情形下，推荐使用Enum，因为IntEnum违反了一些枚举类型语义上的协议（通过与整型的比较，可以传递给其他不相关的枚举类型）。IntEnum只用于一些别无选择的情形下，如：整型常量被替换成为枚举类型的同时，需要满足向后兼容代码仍然需要整型值。
+
+虽然IntEnum是enum模块的一部分，但是我们可以用很简单的代码实现这个类型：
+
+    class IntEnum(int, Enum):
+        pass
+
+代码展示了如何定义Enum衍生类，比如将int替换为str，从而得到一个strEnum类：
+
+关于衍生类的一些规定：
+
+1. 在父类列表中，混合类型应当出现在Enum类前，就像上面的IntEnum演示的那样。
+2. 虽然Enum成员值可以是任何类型，但是一点混合了别的类型，所以成员值都必须使用该类型。这个限制不适用于只添加方法而不指定另一个数据类型的情形。
+3. 一旦混合了别的类型，`value`属性就不再是enum成员本身了，虽然它们是等价的，而且比较时也相等。
+4. 字符串的`%`运算符：`%s`和`%r`分别调用Enum类型的`__str__()`和`__repr__()`方法；其他的参数（如IntEnum的`%i`和`%h`）会把成员的类型看做混合类型对待。
+5. `str.__format__()`(`format()`)函数会调用混合类型的`__format__()`方法。如果调用Enum的`str()`和`repr()`，使用`!s`和`!r`作为参数。
 
