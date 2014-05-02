@@ -577,28 +577,7 @@ Enum是一个Python类，所以和其他类一样可以定义方法或特殊方�
 
 如果Enum中定义了`__new__()`或`__init__()`，不论Enum成员值是什么，这个值都会被当做参数传入这两个特殊方法：
 
-    >>> class Planet(Enum):
-    ...     MERCURY = (3.303e+23, 2.4397e6)
-    ...     VENUS   = (4.869e+24, 6.0518e6)
-    ...     EARTH   = (5.976e+24, 6.37814e6)
-    ...     MARS    = (6.421e+23, 3.3972e6)
-    ...     JUPITER = (1.9e+27,   7.1492e7)
-    ...     SATURN  = (5.688e+26, 6.0268e7)
-    ...     URANUS  = (8.686e+25, 2.5559e7)
-    ...     NEPTUNE = (1.024e+26, 2.4746e7)
-    ...     def __init__(self, mass, radius):
-    ...         self.mass = mass       # in kilograms
-    ...         self.radius = radius   # in meters
-    ...     @property
-    ...     def surface_gravity(self):
-    ...         # universal gravitational constant  (m3 kg-1 s-2)
-    ...         G = 6.67300E-11
-    ...         return G * self.mass / (self.radius * self.radius)
-    ...
-    >>> Planet.EARTH.value
-    (5.976e+24, 6378140.0)
-    >>> Planet.EARTH.surface_gravity
-    9.802652743337129
+参考下面的示例部分可以深入理解定义这两个方法后子类具有的行为。
 
 ### Enum的继承限制
 
@@ -712,12 +691,12 @@ IntEnum也是Int的子类，所以IntEnum的成员可以与整数做比较。同
 
 IntEnum值的行为都类似整型：
 
->>> int(Shape.circle)
-1
->>> ['a', 'b', 'c'][Shape.circle]
-'b'
->>> [i for i in range(Shape.square)]
-[0, 1]
+    >>> int(Shape.circle)
+    1
+    >>> ['a', 'b', 'c'][Shape.circle]
+    'b'
+    >>> [i for i in range(Shape.square)]
+    [0, 1]
 
 注意，在大多数情形下，推荐使用Enum，因为IntEnum违反了一些枚举类型语义上的协议（通过与整型的比较，可以传递给其他不相关的枚举类型）。IntEnum只用于一些别无选择的情形下，如：整型常量被替换成为枚举类型的同时，需要满足向后兼容代码仍然需要整型值。
 
@@ -734,5 +713,107 @@ IntEnum值的行为都类似整型：
 2. 虽然Enum成员值可以是任何类型，但是一点混合了别的类型，所以成员值都必须使用该类型。这个限制不适用于只添加方法而不指定另一个数据类型的情形。
 3. 一旦混合了别的类型，`value`属性就不再是enum成员本身了，虽然它们是等价的，而且比较时也相等。
 4. 字符串的`%`运算符：`%s`和`%r`分别调用Enum类型的`__str__()`和`__repr__()`方法；其他的参数（如IntEnum的`%i`和`%h`）会把成员的类型看做混合类型对待。
-5. `str.__format__()`(`format()`)函数会调用混合类型的`__format__()`方法。如果调用Enum的`str()`和`repr()`，使用`!s`和`!r`作为参数。
+5. `str.__format__()`或`format()`函数会调用混合类型的`__format__()`方法。如果调用Enum的`str()`和`repr()`，使用`!s`和`!r`作为参数。
 
+### 示例
+
+利用`__new__()`，自动为成员分配值：
+
+    >>> class AutoNumber(Enum):
+    ...     def __new__(cls):
+    ...         value = len(cls.__members__) + 1
+    ...         obj = object.__new__(cls)
+    ...         obj._value_ = value
+    ...         return obj
+    ...
+    >>> class Color(AutoNumber):
+    ...     red = ()
+    ...     green = ()
+    ...     blue = ()
+    ...
+    >>> Color.green.value == 2
+    True
+
+如果定义了`__new__()`，则会再创建成员时调用；而后这个自定义的`__new__()`会被Enum的`__new__()`代替（Enum的`__new__()`会在新建类之后调用，用于查找已有成员）。因为要保证枚举类型应有的行为，所以没有办法直接修改Enum的`__new__()`。
+
+
+利用`__init__()`实现当出现成员值重复的情况时抛出异常：
+
+    >>> class DuplicateFreeEnum(Enum):
+    ...     def __init__(self, *args):
+    ...         cls = self.__class__
+    ...         if any(self.value == e.value for e in cls):
+    ...             a = self.name
+    ...             e = cls(self.value).name
+    ...             raise ValueError(
+    ...                 "aliases not allowed in DuplicateFreeEnum:  %r --> %r"
+    ...                 % (a, e))
+    ...
+    >>> class Color(DuplicateFreeEnum):
+    ...     red = 1
+    ...     green = 2
+    ...     blue = 3
+    ...     grene = 2
+    ...
+    Traceback (most recent call last):
+    ...
+    ValueError: aliases not allowed in DuplicateFreeEnum:  'grene' --> 'green'
+
+如果定义了`__init__()`，则会在初始化子类成员时调用，从上面的代码可以看出，调用`__init__()`时子类的成员已经创建完毕了。这段代码实现了`enum.unique()`的功能，主要是示例如何自定义实现诸如“禁止成员值重复”这样的Enum子类行为。
+
+再来看看初始化时，成员如何向`__new__()`或`__init__()`传递参数：
+
+    >>> class Planet(Enum):
+    ...     MERCURY = (3.303e+23, 2.4397e6)
+    ...     VENUS   = (4.869e+24, 6.0518e6)
+    ...     EARTH   = (5.976e+24, 6.37814e6)
+    ...     MARS    = (6.421e+23, 3.3972e6)
+    ...     JUPITER = (1.9e+27,   7.1492e7)
+    ...     SATURN  = (5.688e+26, 6.0268e7)
+    ...     URANUS  = (8.686e+25, 2.5559e7)
+    ...     NEPTUNE = (1.024e+26, 2.4746e7)
+    ...     def __init__(self, mass, radius):
+    ...         self.mass = mass       # in kilograms
+    ...         self.radius = radius   # in meters
+    ...     @property
+    ...     def surface_gravity(self):
+    ...         # universal gravitational constant  (m3 kg-1 s-2)
+    ...         G = 6.67300E-11
+    ...         return G * self.mass / (self.radius * self.radius)
+    ...
+    >>> Planet.EARTH.value
+    (5.976e+24, 6378140.0)
+    >>> Planet.EARTH.surface_gravity
+    9.802652743337129
+
+上面提到IntEnum违反了一下枚举类型应有的行为，其实可以保持Enum的默认行为，并使之支持比较运算符，可以这样：
+
+    >>> class OrderedEnum(Enum):
+    ...     def __ge__(self, other):
+    ...         if self.__class__ is other.__class__:
+    ...             return self.value >= other.value
+    ...         return NotImplemented
+    ...     def __gt__(self, other):
+    ...         if self.__class__ is other.__class__:
+    ...             return self.value > other.value
+    ...         return NotImplemented
+    ...     def __le__(self, other):
+    ...         if self.__class__ is other.__class__:
+    ...             return self.value <= other.value
+    ...         return NotImplemented
+    ...     def __lt__(self, other):
+    ...         if self.__class__ is other.__class__:
+    ...             return self.value < other.value
+    ...         return NotImplemented
+    ...
+    >>> class Grade(OrderedEnum):
+    ...     A = 5
+    ...     B = 4
+    ...     C = 3
+    ...     D = 2
+    ...     F = 1
+    ...
+    >>> Grade.C < Grade.A
+    True
+
+始终记得Enum也是一个Python类，所以那些增强其他Python类功能的方法对Enum也同样适用。
