@@ -157,3 +157,27 @@
     >>> heapqsort(l)
     [3, 4, 6, 6, 7, 7, 8, 8, 9, 9]
 
+## 内建函数`any()`和`all()`的用法：
+
+在enum模块说明中出现的代码，`any()`函数的典型场景，没有什么比Python自己的document更经典的了：
+
+    >>> class DuplicateFreeEnum(Enum):
+    ...     def __init__(self, *args):
+    ...         cls = self.__class__
+    ...         if any(self.value == e.value for e in cls):
+    ...             a = self.name
+    ...             e = cls(self.value).name
+    ...             raise ValueError(
+    ...                 "aliases not allowed in DuplicateFreeEnum:  %r --> %r"
+    ...                 % (a, e))
+    ...
+    >>> class Color(DuplicateFreeEnum):
+    ...     red = 1
+    ...     green = 2
+    ...     blue = 3
+    ...     grene = 2
+    ...
+    Traceback (most recent call last):
+    ...
+    ValueError: aliases not allowed in DuplicateFreeEnum:  'grene' --> 'green'
+
