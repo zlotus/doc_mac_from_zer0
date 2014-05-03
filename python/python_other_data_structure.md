@@ -1,4 +1,4 @@
-# Other Data Structure
+# 一些别的数据结构
 
 [Advanced Data Structure](http://pypix.com/python/advanced-data-structures-python/)
 
