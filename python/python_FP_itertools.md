@@ -141,19 +141,26 @@
 
 * g1被唤醒，从*iterable*中取值`1`，向d1中push值`1`，此时d2、d3、d4同样被push了值`1`，而后g1将d1中的值`1`pop给调用函数，而d2、d3、d4不变；--> ([], [1], [1], [1])
 * g1取值`2`，向d1中push值`2`，此时d2、d3、d4也得到值`2`，而后g1仍会将d1中的值`2`pop给调用函数，同样的，d2、d3、d4不变；--> ([], [1, 2], [1, 2], [1, 2])
-* 后面的情形同样如此，于是调用函数依次得到了返回值1, 2, 3, 4, 5，而d1, d2, d3, d4在每一步中的变化为：([], [1], [1], [1]) -> ([], [1, 2], [1, 2], [1, 2]) -> ([], [1, 2, 3], [1, 2, 3], [1, 2, 3]) -> ([], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]) -> ([], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+* 后面的情形同样如此，于是调用函数依次得到了返回值1, 2, 3, 4, 5，而d1, d2, d3, d4在每一步中的变化为：
+* ([], [1], [1], [1]) -> 
+* ([], [1, 2], [1, 2], [1, 2]) -> 
+* ([], [1, 2, 3], [1, 2, 3], [1, 2, 3]) -> 
+* ([], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]) -> 
+* ([], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
 * 此时*iterable*中的值被取完，`raise StopIteration`，而后g2, g3, g4会依次弹出自己的deque给调用函数。
 * 所以有：
 
-    >>> for i in itertools.tee([1, 2, 3, 4, 5], 4):
-    ...     print(list(i))
-    ...
-    [1, 2, 3, 4, 5]
-    [1, 2, 3, 4, 5]
-    [1, 2, 3, 4, 5]
-    [1, 2, 3, 4, 5]
+```
+>>> for i in itertools.tee([1, 2, 3, 4, 5], 4):
+...     print(list(i))
+...
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+```
 
-* 其实是将来源给了g1并输出的同时，复制给了g2, g3, g4，所以这个行为看起来与Unix中的`tee`命令相似。
+* 其实是将来源给了g1并输出的同时，复制给了g2, g3, g4，在讲g2, g3, g4输出，所以这个行为看起来与Unix中的`tee`命令相似。
 
 ### itertools.zip_longest(*iterables, fillvalue=None)
 
@@ -164,6 +171,216 @@
     >>> list(zip('ABCD', 'xy', ))
     [('A', 'x'), ('B', 'y')]
 
+## 组合数学相关函数
 
+简单的排列组合函数。
 
+### itertools.product(*iterables, repeat=1)
+
+这个函数返回的是笛卡尔积，product(A, B)的返回结果类似((x, y) for x in A for y in B)。函数的行为类似汽车里程表，变化最大的值在最右边，最右迭代完成后次最右取下一个值（类似进位）。所以，如果*iterables*中的几个可迭代对象是有顺序的，则`product()`函数的返回结果会是有序的。
+
+*repeat*参数zhid每一个*iterables*中的迭代器重复出现几次。
+
+    # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+    # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+
+### itertools.permutations(iterable, r=None)
+
+若不指定*r*则返回*iterable*的全排列，即`P(len(iterable), len(iterable))`；若指定*r*则返回`P(r, len(iterable))`。
+
+    # permutations('ABCD', 2) --> AB AC AD BA BC BD CA CB CD DA DB DC
+    # permutations(range(3)) --> 012 021 102 120 201 210
+
+排列是笛卡尔积的子集，所以可以借助上面的`product()`产生结果集，而后从中滤掉有重复元素的项：
+
+    def permutations(iterable, r=None):
+        pool = tuple(iterable)
+        n = len(pool)
+        r = n if r is None else r
+        for indices in product(range(n), repeat=r):
+            if len(set(indices)) == r:
+                yield tuple(pool[i] for i in indices)
+
+### itertools.combinations(iterable, r)
+
+函数返回指定*iterable*的组合结果，即`C(r, len(iterable))`。
+
+    # combinations('ABCD', 2) --> AB AC AD BC BD CD
+    # combinations(range(4), 3) --> 012 013 023 123
+
+组合是排列的子集，所以可以借助上面的`permutations()`产生结果集，而后从中滤掉未排序的项：
+
+    def combinations(iterable, r):
+        pool = tuple(iterable)
+        n = len(pool)
+        for indices in permutations(range(n), r):
+            if sorted(indices) == list(indices):
+                yield tuple(pool[i] for i in indices)
+
+### itertools.combinations_with_replacement(iterable, r)
+
+函数返回指定*iterable*的组合，但*iterable*中的元素可以重复*r*次。
+
+    # combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC
+
+元素可重复的组合是笛卡尔积的自己，所以可以借助上面的`product()`产生结果集，而后从中滤掉未排序的项：
+
+    def combinations_with_replacement(iterable, r):
+        pool = tuple(iterable)
+        n = len(pool)
+        for indices in product(range(n), repeat=r):
+            if sorted(indices) == list(indices):
+                yield tuple(pool[i] for i in indices)
+
+## 一些示例
+
+使用itertools函数的优势在于，需要值的时候才进行计算，否则挂起。这种惰性求值相对于“一次性把所以值加进内存整体求值并返回”而言更加节省资源。使用itertools完成工作的代码风格更函数式，像管道一样把每个工具连接起来，这样可以帮助消除计算中出现的大量的临时变量。“向量化”的代码执行效率通常高于使用for循环和生成器，因为这样会有解释器开销。
+
+    def take(n, iterable):
+        "Return first n items of the iterable as a list"
+        return list(islice(iterable, n))
+
+    def tabulate(function, start=0):
+        "Return function(0), function(1), ..."
+        return map(function, count(start))
+    
+    def consume(iterator, n):
+        "Advance the iterator n-steps ahead. If n is none, consume entirely."
+        # Use functions that consume iterators at C speed.
+        if n is None:
+            # feed the entire iterator into a zero-length deque
+            collections.deque(iterator, maxlen=0)
+        else:
+            # advance to the empty slice starting at position n
+            next(islice(iterator, n, n), None)
+    
+    def nth(iterable, n, default=None):
+        "Returns the nth item or a default value"
+        return next(islice(iterable, n, None), default)
+    
+    def quantify(iterable, pred=bool):
+        "Count how many times the predicate is true"
+        return sum(map(pred, iterable))
+    
+    def padnone(iterable):
+        """Returns the sequence elements and then returns None indefinitely.
+    
+        Useful for emulating the behavior of the built-in map() function.
+        """
+        return chain(iterable, repeat(None))
+    
+    def ncycles(iterable, n):
+        "Returns the sequence elements n times"
+        return chain.from_iterable(repeat(tuple(iterable), n))
+
+    def dotproduct(vec1, vec2):
+        return sum(map(operator.mul, vec1, vec2))
+    
+    def flatten(listOfLists):
+        "Flatten one level of nesting"
+        return chain.from_iterable(listOfLists)
+    
+    def repeatfunc(func, times=None, *args):
+        """Repeat calls to func with specified arguments.
+    
+        Example:  repeatfunc(random.random)
+        """
+        if times is None:
+            return starmap(func, repeat(args))
+        return starmap(func, repeat(args, times))
+    
+    def pairwise(iterable):
+        "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+        a, b = tee(iterable)
+        next(b, None)
+        return zip(a, b)
+    
+    def grouper(iterable, n, fillvalue=None):
+        "Collect data into fixed-length chunks or blocks"
+        # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+        args = [iter(iterable)] * n
+        return zip_longest(*args, fillvalue=fillvalue)
+    
+    def roundrobin(*iterables):
+        "roundrobin('ABC', 'D', 'EF') --> A D E B F C"
+        # Recipe credited to George Sakkis
+        pending = len(iterables)
+        nexts = cycle(iter(it).__next__ for it in iterables)
+        while pending:
+            try:
+                for next in nexts:
+                    yield next()
+            except StopIteration:
+                pending -= 1
+                nexts = cycle(islice(nexts, pending))
+
+    def partition(pred, iterable):
+        'Use a predicate to partition entries into false entries and true entries'
+        # partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9
+        t1, t2 = tee(iterable)
+        return filterfalse(pred, t1), filter(pred, t2)
+    
+    def powerset(iterable):
+        "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+        s = list(iterable)
+        return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    
+    def unique_everseen(iterable, key=None):
+        "List unique elements, preserving order. Remember all elements ever seen."
+        # unique_everseen('AAAABBBCCDAABBB') --> A B C D
+        # unique_everseen('ABBCcAD', str.lower) --> A B C D
+        seen = set()
+        seen_add = seen.add
+        if key is None:
+            for element in filterfalse(seen.__contains__, iterable):
+                seen_add(element)
+                yield element
+        else:
+            for element in iterable:
+                k = key(element)
+                if k not in seen:
+                    seen_add(k)
+                    yield element
+
+    def partition(pred, iterable):
+        'Use a predicate to partition entries into false entries and true entries'
+        # partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9
+        t1, t2 = tee(iterable)
+        return filterfalse(pred, t1), filter(pred, t2)
+    
+    def powerset(iterable):
+        "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+        s = list(iterable)
+        return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    
+    def unique_everseen(iterable, key=None):
+        "List unique elements, preserving order. Remember all elements ever seen."
+        # unique_everseen('AAAABBBCCDAABBB') --> A B C D
+        # unique_everseen('ABBCcAD', str.lower) --> A B C D
+        seen = set()
+        seen_add = seen.add
+        if key is None:
+            for element in filterfalse(seen.__contains__, iterable):
+                seen_add(element)
+                yield element
+        else:
+            for element in iterable:
+                k = key(element)
+                if k not in seen:
+                    seen_add(k)
+                    yield element
+
+    def random_combination(iterable, r):
+        "Random selection from itertools.combinations(iterable, r)"
+        pool = tuple(iterable)
+        n = len(pool)
+        indices = sorted(random.sample(range(n), r))
+        return tuple(pool[i] for i in indices)
+    
+    def random_combination_with_replacement(iterable, r):
+        "Random selection from itertools.combinations_with_replacement(iterable, r)"
+        pool = tuple(iterable)
+        n = len(pool)
+        indices = sorted(random.randrange(n) for i in range(r))
+        return tuple(pool[i] for i in indices)
 
