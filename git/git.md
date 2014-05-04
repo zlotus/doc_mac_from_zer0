@@ -41,6 +41,8 @@
     
 解决参考：<http://blog.csdn.net/keyboardota/article/details/7603630>
 
+以及：[Generating SSH Keys](https://help.github.com/articles/generating-ssh-keys)
+
 > 使用git clone命令从github上同步github上的代码库时，如果使用SSH链接（如我自己的beagleOS项目：git@github.com:DamonDeng/beagleOS.git），而你的SSH key没有添加到github帐号设置中，
 > 系统会报下面的错误：
 > 
@@ -285,3 +287,27 @@
     # --local modify .git/config
     # --global modify ~/.gitconfig
     git config --local http.proxy http://127.0.0.1:8888
+
+### 遇到GitHub开启两步验后证无法push代码
+
+看到GitHub强烈推荐开启两步验证（2-Factor Authentication），我就打开了，而后发现push代码报错：
+
+    ➜  doc_mac_from_zer0 git:(master) ✗ git push origin master
+    Username for 'https://github.com':qinzishi@gmail.com
+    Password for 'https://qinzishi@gmail.com@github.com':
+    remote: Invalid username or password.
+    fatal: Authentication failed for 'https://github.com/zlotus/doc_mac_from_zer0.git/'
+
+解决方法就是：
+
+1. 在Profile -> Applications -> Personal access tokens中点 **Generate New Token**。
+2. 填写 **Token description**，按默认选项，点 **Generate Token**。
+3. 然后会看到“Make sure to copy your new personal access token now. You won't be able to see it again!”这句话下面的一串字符，复制，这就是`git push`的新密码了。
+
+解决参考：
+
+* [Cannot push to github repo](http://stackoverflow.com/questions/5486143/cannot-push-to-github-repo), 
+* [Two-factor Authentication](https://github.com/blog/1614-two-factor-authentication), 
+* [Creating an access token for command-line use](https://help.github.com/articles/creating-an-access-token-for-command-line-use)
+
+除了GitHub自己的GUI客户端外，再推荐一个好用的客户端：[Source Tree](http://www.sourcetreeapp.com/)
