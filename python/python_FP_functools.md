@@ -72,7 +72,7 @@
     >>> get_pep.cache_info()
     CacheInfo(hits=3, misses=8, maxsize=32, currsize=8)
 
-这就是最著名的用例，计算Fibonacci数列是使用`lru_cache()`实现动态规划：
+这就是最著名的用例，计算Fibonacci数列时使用`lru_cache()`实现动态规划：
 
     >>> @lru_cache(maxsize=None)
     ... def fib(n):
@@ -89,7 +89,7 @@
 
 一个讨巧的类修饰器，如果一个类定义了至少一个富比较排序方法（包括`__lt__()`, `__le__()`, `__gt__()`, `__ge__()`），这个修饰器会帮我们实现剩下的。另外，被修饰类应当实现`__eq__()`方法。
 
-不过，虽然这个方法会让我们很方便准确的实现所有的排序方法，但是它的执行效率是低下的，而且复杂的调用会使得调试变的困难。如果需要更高的比较效率，还是推荐手写全部的六个富比较方法。
+不过，虽然这个方法会让我们方便准确的实现所有的排序方法，但是它的执行效率是低下的，而且复杂的调用会使得调试变的困难。如果需要更高的比较效率，还是推荐手写全部的六个富比较方法。
 
     def _not_op(op, other):
         # "not a < b" handles "a >= b"
@@ -208,5 +208,103 @@ Python3.4新添加。
     >>> c.set_alive()
     >>> c.alive
     True
+
+### functools.reduce(function, iterable[, initializer])
+
+函数的大概行为：从*iterable*中取出两个值作为两个参数传给*function*算出结果，再从*iterable*中取下一个值并连同上一步的结果作为两个参数传给*function*算出结果，再从*iterable*中取值...直到*iterable*取完。
+
+所以，`reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])`的计算过程应该是`((((1+2)+3)+4)+5)`。
+
+*initalizer*指定计算的初始值，若为`None`则初始参数为*iterable*的第一个元素。
+
+### @functools.singledispatch(default)
+
+这个decorator可以把一个函数变为单分派泛型函数，这个句子里的术语很多，看看例子吧。
+
+    >>> from functools import singledispatch
+    >>> @singledispatch
+    ... def fun(arg, verbose=False):
+    ...     if verbose:
+    ...         print("Let me just say,", end=" ")
+    ...     print(arg)
+    ...
+
+要注意的是，decorator只对第一个参数有效，也就这里的*arg*。现在，可以用`register()`为这个函数添加类型重载了：
+
+    >>> @fun.register(int)
+    ... def _(arg, verbose=False):
+    ...     if verbose:
+    ...         print("Strength in numbers, eh?", end=" ")
+    ...     print(arg)
+    ...
+    >>> @fun.register(list)
+    ... def _(arg, verbose=False):
+    ...     if verbose:
+    ...         print("Enumerate this:")
+    ...     for i, elem in enumerate(arg):
+    ...         print(i, elem)
+    ...
+
+注意，这个`register()`也是个decorator，需要一个类型作为参数，被修饰函数应该实现对这个类型的相应操作。
+
+当然，decorator也可以直接写成函数：
+
+    >>> def nothing(arg, verbose=False):
+    ...     print("Nothing.")
+    ...
+    >>> fun.register(type(None), nothing)
+
+`register()`返回未被修饰的函数对象，所以可以很容易的做调试、持久化、单元测试：
+
+    >>> @fun.register(float)
+    ... @fun.register(Decimal)
+    ... def fun_num(arg, verbose=False):
+    ...     if verbose:
+    ...         print("Half of your number:", end=" ")
+    ...     print(arg / 2)
+    ...
+    >>> fun_num is fun
+    False
+
+上面我们定义了对`int`, `list`, `None`, `float`, `Decimal`类型的重载，现在调用它们：
+
+    >>> fun("Hello, world.")
+    Hello, world.
+    >>> fun("test.", verbose=True)
+    Let me just say, test.
+    >>> fun(42, verbose=True)
+    Strength in numbers, eh? 42
+    >>> fun(['spam', 'spam', 'eggs', 'spam'], verbose=True)
+    Enumerate this:
+    0 spam
+    1 spam
+    2 eggs
+    3 spam
+    >>> fun(None)
+    Nothing.
+    >>> fun(1.23)
+    0.615
+
+另一个需要注意的是，被`@singledispatch`修饰的函数，即这里的`fun()`，注册时使用的是`object`类型，即类型查找失败时会调用原函数。
+
+检查泛型函数在处理不同类型时到底调用的是哪个函数对象，可以使用decorator提供的`dispatch()`：
+
+    >>> fun.dispatch(float)
+    <function fun_num at 0x1035a2840>
+    >>> fun.dispatch(dict)    # note: default implementation
+    <function fun at 0x103fe0000>
+
+这里的`dict`就是会导致查找失败的类型，于是返回了原函数对象。
+
+检查泛型函数的所有支持类型，使用decorator提供的`registey`属性，这是一个字典，所以可以使用`key()`来查看：
+
+    >>> fun.registry.keys()
+    dict_keys([<class 'NoneType'>, <class 'int'>, <class 'object'>,
+              <class 'decimal.Decimal'>, <class 'list'>,
+              <class 'float'>])
+    >>> fun.registry[float]
+    <function fun_num at 0x1035a2840>
+    >>> fun.registry[object]
+    <function fun at 0x103fe0000>
 
 
