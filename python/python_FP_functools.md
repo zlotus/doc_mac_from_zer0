@@ -307,4 +307,98 @@ Python3.4新添加。
     >>> fun.registry[object]
     <function fun at 0x103fe0000>
 
+### functools.update_wrapper(wrapper, wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES)
+
+看名字就知道，这是一个负责包装的函数，默认情况下它可以把被封装函数的`__name__`, `__module__`,`__qualname__`, `__doc__`, `__annotations__`, `__dict__`都复制到封装函数中，使得到的封装函数更像原来的被封装函数，具体参见下面的例子。
+
+先看看源码，很简单：
+
+    WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__qualname__', '__doc__',
+                           '__annotations__')
+    WRAPPER_UPDATES = ('__dict__',)
+    def update_wrapper(wrapper,
+                       wrapped,
+                       assigned = WRAPPER_ASSIGNMENTS,
+                       updated = WRAPPER_UPDATES):
+        for attr in assigned:
+            try:
+                value = getattr(wrapped, attr)
+            except AttributeError:
+                pass
+            else:
+                setattr(wrapper, attr, value)
+        for attr in updated:
+            getattr(wrapper, attr).update(getattr(wrapped, attr, {}))
+        wrapper.__wrapped__ = wrapped
+        return wrapper
+
+*assigned*指定将被封装函数中的哪些属性直接复制到封装函数中，默认复制`WRAPPER_ASSIGNMENTS`指定的属性。
+
+*updated*指定将被封装函数中的哪些属性更新到封装函数中，默认更新`WRAPPER_UPDATES`指定的属性。
+
+封装函数默认提供`__wrapped__`属性，用来直接访问被封装函数。
+
+示例，不使用update_wrapper时，封装函数仅仅实现功能，并不具备被封装函数的属性：
+
+    >>> def wrapper(func):
+    ...     def callable(*args, **kwargs):
+    ...         return func(*args, **kwargs) + 'wrapper. '
+    ...     return callable
+    ... 
+    >>> @wrapper
+    ... def wrapped():
+    ...     '''doc of wrapped function'''
+    ...     return 'wrapped. '
+    ... 
+    >>> wrapped()
+    'wrapped. wrapper. '
+    >>> wrapped.__doc__
+    >>>
+
+使用update_wrapper时，被封装函数的属性也复制给了封装函数：
+
+    >>> from functools import update_wrapper
+    >>> def wrapper(func):
+    ...     def callable(*args, **kwargs):
+    ...         return func(*args, **kwargs) + 'wrapper. '
+    ...     return update_wrapper(callable, func)
+    ... 
+    >>> @wrapper
+    ... def wrapped():
+    ...     '''doc of wrapped function'''
+    ...     return 'wrapped. '
+    ... 
+    >>> wrapped()
+    'wrapped. wrapper. '
+    >>> wrapped.__doc__
+    'doc of wrapped function'
+
+### @functools.wraps(wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES)
+
+这个decorator的目的是为了更方便的调用`update_wrapper()`：
+
+有`wrapper = partial(update_wrapper, wrapped=func, assigned=assigned, updated=updated)(wrapper)`；
+
+即`wrapper = update_wrapper(wrapper=wrapper, wrapped=func, assigned=assigned, updated=updated)`。
+
+所以上面的`update_wrapper()`时的代码可以改成：
+
+    >>> from functools import wraps
+    >>> def wrapper(func):
+    ...     @wraps(func)
+    ...     def callable(*args, **kwargs):
+    ...         return func(*args, **kwargs) + 'wrapper. '
+    ...     return callable
+    ... 
+    >>> @wrapper
+    ... def wrapped():
+    ...     '''doc of wrapped function'''
+    ...     return 'wrapped. '
+    ... 
+    >>> wrapped()
+    'wrapped. wrapper. '
+    >>> wrapped.__doc__
+    'doc of wrapped function'
+
+更加清楚明了。
 
