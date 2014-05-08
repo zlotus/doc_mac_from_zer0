@@ -1,8 +1,8 @@
 # collections
 
-[Advanced Data Structures in Python](http://pypix.com/python/advanced-data-structures-python/)
+推荐阅读[Advanced Data Structures in Python](http://pypix.com/python/advanced-data-structures-python/)
 
-[collections — Container datatypes](https://docs.python.org/3.4/library/collections.html)
+以及Python文档[collections — Container datatypes](https://docs.python.org/3.4/library/collections.html)
 
 除了`dict`, `list`, `set`, `tuple`之外，Python还友善的提供了别的数据结构。
 
@@ -185,7 +185,7 @@ namedtuple是一个Factory Function，其返回值是一个tuple的子类，类�
     for emp in map(EmployeeRecord._make, cursor.fetchall()):
         print(emp.name, emp.title)
 
-如果打开`verbose`开关或访问_source属性，会得到返回类型的代码：
+如果打开`verbose`开关或访问`_source`属性，会得到返回类型的Python代码：
 
     >>> Point = collections.namedtuple('Point', ['x', 'y'], verbose=True)
     from builtins import property as _property, tuple as _tuple

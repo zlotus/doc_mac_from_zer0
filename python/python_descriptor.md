@@ -3,11 +3,27 @@
 遇到了这个descriptor，Google了下。
 干货都来自 [Descriptor HowTo Guide](https://docs.python.org/3.3/howto/descriptor.html) 和 [Python Attributes and Methods](http://www.cafepy.com/article/python_attributes_and_methods/python_attributes_and_methods.html)。
 
-## 0. `o.x`
+## 1. Descriptor协议
+
+只要定义了下面的方法的对象，就成了descriptor：
+
+    __get__(self, obj, type=None)
+    __set__(self, obj, value)
+    __delete__(self, obj)
+
+如果同时定义了`__get__()`, `__set__()`，就被称为 **data descriptor**。
+
+只定义`__get__()`的对象被称为 **non-data descriptor**。
+
+如果想要 **read-only data descriptor**，则同时定义`__get__()`, `__set__()`，并让`__set__()` `raise AttributeError`即可。
+
+经常用到的`staticmethod()`、`classmethod()`、`property()`都是基于这个协议。
+
+## 2. `o.x`的对象属性查找
 
 Python如何在复杂的环境（属性、方法、继承）中查找恰当的属性，是每个pyer早晚都得搞明白的问题，这牵扯到一个`object.attribute`查找优先级。
 
-### `__getattribute__()`：
+### `__getattribute__()`函数查找顺序
 
 1. 如果o（用小写表示实例对象）是一个instance，则调用`object.__getattribute__()`，`o.x`会被看做`type(o).__dict__['x'].__get__(o, type(o))`，根据`x`的特性不同（x是data descriptors、或instance variables、或non-data descriptor），返回值的优先级如下：
 
@@ -24,23 +40,8 @@ Python如何在复杂的环境（属性、方法、继承）中查找恰当的�
     ```
 3. 如果上面的查找失败了，有保险措施，`__getattr__()`负责做最后的尝试，如果没有定义`__getattr__()`则属性查找失败，`raise AttributeError`。
 
-## 1. Descriptor Protocal
 
-只要定义了下面的方法的对象，就成了descriptor：
-
-    __get__(self, obj, type=None)
-    __set__(self, obj, value)
-    __delete__(self, obj)
-
-如果同时定义了`__get__()`, `__set__()`，就被称为 **data descriptor**。
-
-只定义`__get__()`的对象被称为 **non-data descriptor**。
-
-如果想要 **read-only data descriptor**，则同时定义`__get__()`, `__set__()`，并让`__set__()` `raise AttributeError`即可。
-
-经常用到的`staticmethod()`、`classmethod()`、`property()`都是基于这个协议。
-
-## 2. 从`__getattribute__()`开始
+### `__getattribute__()`对descriptor的影响
 
 这个方法负责所有的变量查找，即便是特殊方法(Special method)也 [**很难**](https://docs.python.org/3.3/reference/datamodel.html?highlight=data model#special-method-lookup) (可以通过**语法特性**和**内建函数**的不明确调用) 绕过`__getattribute__()`。
 
@@ -48,7 +49,7 @@ Python如何在复杂的环境（属性、方法、继承）中查找恰当的�
 
 `__getattr__()`是`__getattribute__()`的保险机制，即仅在`__getattribute__()`失败时调用（如果定义了的话）。
 
-## 3. 应用
+## 3. descriptor应用
 
 主要（我见过的）用于拦截 attribute access、给对象绑定函数、静态/类方法，从上面的attribute lookup order就可以看出。
 

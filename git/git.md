@@ -24,14 +24,6 @@
     $ git commit -m 'first_commit'
     $ git remote add origin https://github.com/zlotus/doc_mac_from_zer0.git
     $ git push origin master
-    
-## push 文件
-
-    $ git add .
-    $ git commit -m 'first_commit'
-    $ git remote add origin https://github.com/zlotus/doc_mac_from_zer0.git
-    $ git push origin master
-
 
 ### 在检查连接是否成功时报错：
 
@@ -84,15 +76,6 @@
 
 附 **git** 常用命令图解 <http://marklodato.github.io/visual-git-guide/index-zh-cn.html>
 
-## 提交到 HEAD
-
-    $ git add *
-    $ git commit -m "add git commit & iTerm2"
-
-## 推送改动到远端仓库
-
-    $ git push origin master
-
 ## git 日常命令速查
 
 来自：<http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000>
@@ -101,74 +84,74 @@
 
 我把教程里的命令列出来方便查找，详情请访问原始地址，**在网上见过的最好的中文教程**。
 
-###### 把一个本地目录变成 git 仓库：
+把一个本地目录变成 git 仓库：
 
     $ git init
 
-###### 将改动添加到给 stage(index)：
+将改动添加到给 stage(index)：
 
     $ git add <filename>
 
-###### 将 stage 中的改动提交给仓库：
+将 stage 中的改动提交给仓库：
 
     $ git commit -m "<change commit>"
 
-###### 查看工作区状态：
+查看工作区状态：
 
     $ git status
 
-###### 查看工作区文件与版本库文件的变动，`HEAD`表示版本库最新版本：
+查看工作区文件与版本库文件的变动，`HEAD`表示版本库最新版本：
 
     $ git diff <filename>
     $ git diff HEAD -- <filename>
 
-###### 查看版本历史记录，参数`--pretty=oneline`为概况：
+查看版本历史记录，参数`--pretty=oneline`为概况：
 
     $ git log
     $ git log --pretty=oneline
 
-###### 退回上一个历史版本，n个`^`代表退回上n个历史版本，或简写成`~n`：
+退回上一个历史版本，n个`^`代表退回上n个历史版本，或简写成`~n`：
 
     $ git reset --hard HEAD^
 
-###### 查看历史操作：
+查看历史操作：
 
     $ git reflog
 
-###### 丢弃工作区的修改：
+丢弃工作区的修改：
 
     $ git checkout -- <filename>
 
-###### 撤销(unstage)暂存区的修改，重新放回工作区：
+撤销(unstage)暂存区的修改，重新放回工作区：
 
     $ git reset HEAD <filename>
 
-###### 从版本库中移除文件：
+从版本库中移除文件：
 
     $ git rm <filename>
 
-###### 从版本库中恢复删除的文件：
+从版本库中恢复删除的文件：
 
     $ git checkout -- <filename>
 
-###### 创建 SSH KEY，用于在 GitHub 上添加 SSH KEY ，连接远程仓库：
+创建 SSH KEY，用于在 GitHub 上添加 SSH KEY ，连接远程仓库：
 
     $ ssh-keygen -t rsa -C "youremail@example.com"
 
-###### 关联远程仓库：
+关联远程仓库：
 
     $ git remote add origin git@github.com:yourdir/yourrepo.git
 
-###### 将本地库推送到远程库：
+将本地库推送到远程库：
 
     $ git push -u origin master
 
-###### 克隆远程库到本地，通过 SSH 或 HTTPS ：
+克隆远程库到本地，通过 SSH 或 HTTPS ：
 
     $ git clone git@github.com:yourdir/yourrepo.git
     $ git clone https://github.com/yourdir/yourrepo.git
 
-###### 创建，切换到分支：
+创建，切换到分支：
 
     # create branch: 
     $ git branch <branchname>
@@ -179,35 +162,35 @@
     # create & checkout branch: 
     $ git checkout -b <branchname>
     
-###### 查看当前分支：
+查看当前分支：
 
     $ git branch
 
-###### 合并分支：
+合并分支：
 
     $ git merge <branchname>
 
-###### 删除分支：
+删除分支：
 
     $ git branch -d <branchname>
 
-###### 有图有真相的查看分支：
+有图有真相的查看分支：
 
     $ git log --graph --pretty=oneline --abbrev-commit
 
-###### 合并时禁用 fast forward 策略：
+合并时禁用 fast forward 策略：
 
     $ git merge --no-ff -m "merge with no-ff" dev
 
-###### 暂存工作区现场：
+暂存工作区现场：
 
     $ git stash
 
-###### 查看暂存区：
+查看暂存区：
 
     $ git stash list
 
-###### 从暂存区恢复工作现场，并清理暂存区：
+从暂存区恢复工作现场，并清理暂存区：
 
     # recover: 
     $ git stash apply stash@{stashid}
@@ -218,77 +201,77 @@
     # recover & clean
     $ git stash pop
 
-###### 强行销毁还没有被合并的分支，此操作会丢失修改数据：
+强行销毁还没有被合并的分支，此操作会丢失修改数据：
 
     $ git branch -D feature-vulcan
 
-###### 查看远程库的信息，使用`-v`查看详细信息：
+查看远程库的信息，使用`-v`查看详细信息：
 
     $ git remote
     $ git remote -v
 
-###### 推送分支<branch-name>：
+推送分支<branch-name>：
 
     $ git push origin <branch-name>
 
-###### 创建远程origin的<branch-name>分支到本地，建立本地<branch-name>：
+创建远程origin的<branch-name>分支到本地，建立本地<branch-name>：
 
     $ git checkout -b dev origin/<branch-name>
 
-###### 建立本地<branch-name>与origin/<branch-name>之间的连接：
+建立本地<branch-name>与origin/<branch-name>之间的连接：
 
     $ git branch --set-upstream <branch-name> origin/<branch-name>
 
-###### 获得最新的当前分支：
+获得最新的当前分支：
 
     $ git pull
 
-###### 为当前分支版本创建标签，或根据<commit-id>创建标签：
+为当前分支版本创建标签，或根据<commit-id>创建标签：
 
     $ git tag <tag-name>
     $ git tag <tag-name> <commit-id>
     $ git tag -a <tag-name> -m "<commit-string>" <commit-id>
 
-###### 查看现有标签：
+查看现有标签：
 
     $ git tag
 
-###### 查看标签信息：
+查看标签信息：
 
     $ git show <tag-name>
 
-###### 用PGP签名标签：
+用PGP签名标签：
 
     $ git tag -s <tag-name> -m "<commit-string>" <commit-id>
 
-###### 删除标签：
+删除标签：
 
     $ git tag -d <tag-name>
 
-###### 推送<tag-name>标签到远程库，或推送所有未推送的tag到远程库：
+推送<tag-name>标签到远程库，或推送所有未推送的tag到远程库：
 
     $ git push origin <tag-name>
     $ git push origin --tags
 
-###### 删除远程库标签，要先删除本地tag，再从远程库中删除：
+删除远程库标签，要先删除本地tag，再从远程库中删除：
 
     $ git tag -d <tag-name>
     $ git push origin :refs/tags/<tag-name>
 
-###### 在git中配置alias：
+在git中配置alias：
 
     $ git config --global alias.<alias-string> <origin-string>
     
     # looks awsome! 
     $ git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
-###### 在git中配置proxy，有时候会被各种各样的墙挡住去路：
+在git中配置proxy，有时候会被各种各样的墙挡住去路：
 
     # --local modify .git/config
     # --global modify ~/.gitconfig
     git config --local http.proxy http://127.0.0.1:8888
 
-### 遇到GitHub开启两步验后证无法push代码
+## 遇到GitHub开启两步验后证无法push代码
 
 看到GitHub强烈推荐开启两步验证（2-Factor Authentication），我就打开了，而后发现push代码报错：
 
