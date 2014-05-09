@@ -181,3 +181,102 @@
     ...
     ValueError: aliases not allowed in DuplicateFreeEnum:  'grene' --> 'green'
 
+## 用`zip()`对iterable对象元素进行分组
+
+来自[30 Python Language Features and Tricks You May Not Know About](http://sahandsaba.com/thirty-python-language-features-and-tricks-you-may-not-know.html)的方法
+
+`[iter(a)] * k`返回`[<list_iterator object at 0x106593898>, <list_iterator object at 0x106593898>]`，这样使用`zip(*iter_list)`就可以对同一个迭代器进行“分别”遍历，从而达到分组的效果。
+
+    >>> a = [1, 2, 3, 4, 5, 6]
+    >>> zip(*([iter(a)] * 2))
+    [(1, 2), (3, 4), (5, 6)]
+     
+    >>> group_adjacent = lambda a, k: zip(*([iter(a)] * k))
+    >>> group_adjacent(a, 3)
+    [(1, 2, 3), (4, 5, 6)]
+    >>> group_adjacent(a, 2)
+    [(1, 2), (3, 4), (5, 6)]
+    >>> group_adjacent(a, 1)
+    [(1,), (2,), (3,), (4,), (5,), (6,)]
+
+另一种方法是使用`slice`：
+   
+    >>> zip(a[::2], a[1::2])
+    [(1, 2), (3, 4), (5, 6)]
+    
+    >>> zip(a[::3], a[1::3], a[2::3])
+    [(1, 2, 3), (4, 5, 6)]
+    
+    >>> group_adjacent = lambda a, k: zip(*(a[i::k] for i in range(k)))
+    >>> group_adjacent(a, 3)
+    [(1, 2, 3), (4, 5, 6)]
+    >>> group_adjacent(a, 2)
+    [(1, 2), (3, 4), (5, 6)]
+    >>> group_adjacent(a, 1)
+    [(1,), (2,), (3,), (4,), (5,), (6,)]
+
+或者使用`islice`：
+
+    >>> from itertools import islice
+    >>> def n_grams(a, n):
+    ...     z = (islice(a, i, None) for i in range(n))
+    ...     return zip(*z)
+    ...
+    >>> a = [1, 2, 3, 4, 5, 6]
+    >>> n_grams(a, 3)
+    [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 6)]
+    >>> n_grams(a, 2)
+    [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
+    >>> n_grams(a, 4)
+    [(1, 2, 3, 4), (2, 3, 4, 5), (3, 4, 5, 6)]
+
+## 集合元素运算
+
+使用内建类型`set`进行运算：
+
+* `a <= b`测试a是否为b的子集，与`>`结果相反。
+* `a < b`测试a是否为b的真子集，与`>=`结果相反
+* `a | b`求a, b的并集
+* `a & b`求a, b的交集
+* `a - b`求在a中而不在b中的元素集合
+* `a ^ b`求既不在a中也不在b中的元素集合
+
+```
+>>> A = {1, 2, 3, 3}
+>>> A
+set([1, 2, 3])
+>>> B = {3, 4, 5, 6, 7}
+>>> B
+set([3, 4, 5, 6, 7])
+>>> A | B
+set([1, 2, 3, 4, 5, 6, 7])
+>>> A & B
+set([3])
+>>> A - B
+set([1, 2])
+>>> B - A
+set([4, 5, 6, 7])
+>>> A ^ B
+set([1, 2, 4, 5, 6, 7])
+>>> (A ^ B) == ((A - B) | (B - A))
+True
+```
+
+或者使用`collections.Counter`进行运算：
+
+    >>> A = collections.Counter([1, 2, 2])
+    >>> B = collections.Counter([2, 2, 3])
+    >>> A
+    Counter({2: 2, 1: 1})
+    >>> B
+    Counter({2: 2, 3: 1})
+    >>> A | B
+    Counter({2: 2, 1: 1, 3: 1})
+    >>> A & B
+    Counter({2: 2})
+    >>> A + B
+    Counter({2: 4, 1: 1, 3: 1})
+    >>> A - B
+    Counter({1: 1})
+    >>> B - A
+    Counter({3: 1})
