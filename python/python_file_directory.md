@@ -136,3 +136,104 @@ def copy2(src, dst, *, follow_symlinks=True):
 ```
 
 像注释里写的那样，这个函数类似`cp src dst`命令。
+
+### shutil.ignore_patterns(*patterns)
+
+返回一个`set`对象，包含了需要忽略的文件名、文件夹。这个函数是配合`copytree()`使用的。
+
+*patterns*使用的文件名称匹配模式，为`fnmatch`模块提供的函数，使用Unix文件名模式匹配。
+
+Pattern|Meaning
+-------|-------
+*      |matches everything
+?      |matches any single character
+[seq]  |matches any character in seq
+[!seq] |matches any character not in seq
+
+### shutil.copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2, ignore_dangling_symlinks=False)
+
+这是`shutil`模块中最常用的函数之一，用来递归的拷贝路径下的所有（如果可能的话）文件及文件夹。
+
+这个函数很简单，但是挺值得拓展的：
+
+```
+def copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2,
+             ignore_dangling_symlinks=False):
+
+    names = os.listdir(src)
+    if ignore is not None:
+        ignored_names = ignore(src, names)
+    else:
+        ignored_names = set()
+
+    os.makedirs(dst)
+    errors = []
+    for name in names:
+        if name in ignored_names:
+            continue
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if os.path.islink(srcname):
+                linkto = os.readlink(srcname)
+                if symlinks:
+                    os.symlink(linkto, dstname)
+                    copystat(srcname, dstname, follow_symlinks=not symlinks)                
+                else:
+                    if not os.path.exists(linkto) and ignore_dangling_symlinks:
+                        continue
+                    # 1. put an file ignore filter function before the `copy_function()` 
+                    # can get a more specific ignore mechanism
+                    copy_function(srcname, dstname)
+            elif os.path.isdir(srcname):
+                copytree(srcname, dstname, symlinks, ignore, copy_function)
+            else:
+                copy_function(srcname, dstname)
+            # XXX What about devices, sockets etc.?
+        except Error as err:
+            errors.extend(err.args[0])
+        except OSError as why:
+            errors.append((srcname, dstname, str(why)))
+    try:
+        copystat(src, dst)
+    except OSError as why:
+        if why.winerror is None:
+            errors.append((src, dst, str(why)))
+    if errors:
+        raise Error(errors)
+    return dst
+```
+
+在这个函数中注释1的位置，如果加上判断条件在执行`copy_function()`，就可以精确控制每一个文件的拷贝。可以在这里传入一个callable对象（如参数中加入`ignore_manager=func`）执行if-else判断，比如可以实现类似ACL的功能来控制拷贝的文件，这在编写服务器维护脚本的时候会比较有用。
+
+在注释2的位置，其实可以实现很多功能，比如判断是device后做相应的操作，判断是socket做另一种动作，这样就不止限于文件协议的拷贝了。
+
+关于`ignore_patterns`一般是这样使用的：
+
+```
+from shutil import copytree, ignore_patterns
+
+copytree(source, destination, ignore=ignore_patterns('*.pyc', 'tmp*'))
+```
+
+一个使用*ignore*参数写拷贝的日志的例子：
+
+```
+from shutil import copytree
+import logging
+
+def _logpath(path, names):
+    logging.info('Working in %s' % path)
+    return []   # nothing will be ignored
+
+copytree(source, destination, ignore=_logpath)
+```
+
+使用这个函数时需要注意：
+
+* *dst*不能已存在，否则会`raise OSError`
+* 如果*symlinks*为`True`，则源文件树中的软链接会以软链接的形式拷贝至目的文件树中，而软链接的元数据会尽可能保留（默认使用`copy2()`进行拷贝）；若为`False`则会拷贝连接所指文件到目的文件树；
+* *symlinks*设置为`False`时，无效的软链接的拷贝异常信息将会写入函数的异常列表，待函数结束时一次性返回异常；在这种情况下，可以将*ignore_dangling_symlinks*设置为`True`以屏蔽这种软链接失效的异常信息；
+* *ignore*参数必须是一个可调用对象，接受两个参数：一个路径字符串，一个该路径下一级子文件与文件夹列表（这个列表其实是`os.listdir()`作用在前一个参数上的结果），要求返回一个需要被忽略的文件及文件夹名称列表（因为`copytree()`是递归调用的，所以列表中的文件及文件夹名称应该是相对于当前目录的名称，即相对路径）；
+* *copy_function*接受是一个可调用对象，接受两个参数：源路径，目的路径；
+* 拷贝途中出现的所有异常会被添加至异常列表，待函数结束时一次性返回；
