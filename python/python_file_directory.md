@@ -4,7 +4,9 @@
 
 ## shutil
 
-`shutil`是一个非常方便的文件操作模块，提供文件/目录的批量拷贝、删除操作。模块提供高级文件操作，如果需要对文件进行系统级访问的话，也可以使用`os`模块。
+`shutil`是一个非常方便的系统操作模块，提供文件/目录的批量拷贝、删除操作；提供系统权限设置；提供压缩文件相关功能。如果需要对文件进行系统级访问的话，可以使用`os`模块，`shutil`中的很多工具其实调用的是`os`模块中的相关函数。
+
+PS: shutil可能是shell utility的简称，因为它实现了一小部分shell的功能。
 
 ### shutil.copyfileobj(fsrc, fdst[, length])
 
@@ -189,7 +191,7 @@ def copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2,
                 copytree(srcname, dstname, symlinks, ignore, copy_function)
             else:
                 copy_function(srcname, dstname)
-            # XXX What about devices, sockets etc.?
+            # 2. XXX What about devices, sockets etc.?
         except Error as err:
             errors.extend(err.args[0])
         except OSError as why:
@@ -237,3 +239,84 @@ copytree(source, destination, ignore=_logpath)
 * *ignore*参数必须是一个可调用对象，接受两个参数：一个路径字符串，一个该路径下一级子文件与文件夹列表（这个列表其实是`os.listdir()`作用在前一个参数上的结果），要求返回一个需要被忽略的文件及文件夹名称列表（因为`copytree()`是递归调用的，所以列表中的文件及文件夹名称应该是相对于当前目录的名称，即相对路径）；
 * *copy_function*接受是一个可调用对象，接受两个参数：源路径，目的路径；
 * 拷贝途中出现的所有异常会被添加至异常列表，待函数结束时一次性返回；
+
+### shutil.rmtree(path, ignore_errors=False, onerror=None)
+
+用于删除整个目录的函数，*path*必须是一个目录（不可以是目录的软链接）。
+
+这个函数的实现比较有意思，它提供了两个版本的删除：一个是防符号链接攻击版本，另一个是非安全版本。可以使用`rmtree.avoids_symlink_attacks`属性查看当前系统是否支持防符号链接攻击。（至少在OSX 10.9上不支持）
+
+### shutil.move(src, dst)
+
+用于移动整个目录的函数。
+
+看源码就知道，这个函数并不像一些平台（如Windows）提供的移动函数高效。因为它实现的是复制+删除操作。
+
+### shutil.disk_usage(path)
+
+返回当前路径的磁盘利用率。
+
+### shutil.chown(path, user=None, group=None)
+
+加强版的`os.chown()`，可以接受用户名、组名作为参数（`os.chown()`只接受uid, gid），Unix-only。
+
+### shutil.which(cmd, mode=os.F_OK | os.X_OK, path=None)
+
+类似Unix的`which`命令，返回*cmd*执行时，该命令的在文件系统中的路径。
+
+### shutil.make_archive(base_name, format[, root_dir[, base_dir[, verbose[, dry_run[, owner[, group[, logger]]]]]]])
+
+用于创建压缩文件。
+
+### shutil.get_archive_formats()
+
+返回当前支持的压缩文件类型。默认支持：
+
+* gztar: gzip’ed tar-file
+* bztar: bzip2’ed tar-file (if the bz2 module is available.)
+* tar: uncompressed tar file
+* zip: ZIP file
+
+可以使用`register_archive_format()`添加想要的支持类型。
+
+### shutil.register_archive_format(name, function[, extra_args[, description]])
+
+注册一个新的压缩文件支持。
+
+### shutil.unregister_archive_format(name)
+
+从支持列表中删除一个压缩文件支持。
+
+### shutil.unpack_archive(filename[, extract_dir[, format]])
+
+用于解压文件。
+
+### shutil.register_unpack_format(name, extensions, function[, extra_args[, description]])
+
+注册一个新的解压缩文件支持。
+
+### shutil.unregister_unpack_format(name)
+
+从支持列表中删除一个解压缩文件支持。
+
+Python的压缩与解压大概是这样用的：
+
+    >>> from shutil import make_archive
+    >>> import os
+    >>> archive_name = os.path.expanduser(os.path.join('~', 'myarchive'))
+    >>> root_dir = os.path.expanduser(os.path.join('~', '.ssh'))
+    >>> make_archive(archive_name, 'gztar', root_dir)
+    '/Users/tarek/myarchive.tar.gz
+
+结果是这样的：
+
+    $ tar -tzvf /Users/tarek/myarchive.tar.gz
+    drwx------ tarek/staff       0 2010-02-01 16:23:40 ./
+    -rw-r--r-- tarek/staff     609 2008-06-09 13:26:54 ./authorized_keys
+    -rwxr-xr-x tarek/staff      65 2008-06-09 13:26:54 ./config
+    -rwx------ tarek/staff     668 2008-06-09 13:26:54 ./id_dsa
+    -rwxr-xr-x tarek/staff     609 2008-06-09 13:26:54 ./id_dsa.pub
+    -rw------- tarek/staff    1675 2008-06-09 13:26:54 ./id_rsa
+    -rw-r--r-- tarek/staff     397 2008-06-09 13:26:54 ./id_rsa.pub
+    -rw-r--r-- tarek/staff   37192 2010-02-06 18:23:10 ./known_hosts
+
