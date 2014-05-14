@@ -124,11 +124,11 @@
 
 ## `calendar`输出日历
 
-这个工具是又好用又逗，输出的格式非常完美。
+输出的格式非常完美。
 
 其中的函数都会补全周，即除了本月的日子，还包括上个月的最后几天和下个月的头几天，用于补全这个月的第一周和最后一周，很多函数提供参数`firstweekday`用于定义“周”的结构。
 
-这种输出真是让人开眼界^_^：
+这种输出真是让人眼前一亮：
 
     >>> import calendar
     >>> calendar.TextCalendar().prmonth(2014, 4)
@@ -496,7 +496,7 @@ IndexError: list index out of range
 
 每个小白程序员可能出过这种越界的错误，就是在迭代进行时修改列表。
 
-如果要得到上面这段代码期望的结果，可以使用列表表达式（[List Comprehensions](https://docs.python.org/3.4/tutorial/datastructures.html#tut-listcomps)）：
+如果要得到上面这段代码期望的结果，可以使用列表推导式（[List Comprehensions](https://docs.python.org/3.4/tutorial/datastructures.html#tut-listcomps)）：
 
 ```
 >>> odd = lambda x : bool(x % 2)
@@ -512,4 +512,85 @@ IndexError: list index out of range
 >>> list(filter(lambda x: not (x % 2), range(10)))
 [0, 2, 4, 6, 8]
 ```
+
+### 闭包变量值的延迟绑定问题
+
+闭包，经常出现在函数式编程中（其实，在使用Python的decorator、lambda是经常会出现闭包），只有在被调用时才执行相应的函数块（包括函数体和其所需的外部变量），即前面提到的惰性求值。
+
+闭包中的外部变量会有延迟绑定行为，即调用时才进行赋值。如果这样写：
+
+```
+>>> def create_multipliers():
+...     return [lambda x: i * x for i in range(5)]
+...
+>>> for multiplier in create_multipliers():
+...     print multiplier(2)
+...
+```
+
+上面的代码返回了5个8，为什么不是0, 2, 4, 6, 8呢？
+
+因为变量*i*是lambda的闭包变量，即free variables（类似于环境中的变量，是独立于lambda之外，而x是在lambda内的参数），它是在调用时被赋值的，而调用时列表推导式已经结束，*i*停留在了4这个结果值上。
+
+可以使用函数的`__closure__`属性看到闭包变量：
+
+```
+>>> def create_multipliers():
+...     return [lambda x: i * x for i in range(5)]
+... 
+>>> funcs = create_multipliers()
+>>> pprint.pprint(funcs)
+[<function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10f7e88c8>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10f7e8950>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10f7e89d8>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10f7e8a60>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10f7e8ae8>]
+>>> for multiplier in funcs:
+...     print(multiplier(2), multiplier.__closure__, multiplier.__closure__[0].cell_contents)
+... 
+8 (<cell at 0x10f5dce28: int object at 0x10f3c4c20>,) 4
+8 (<cell at 0x10f5dce28: int object at 0x10f3c4c20>,) 4
+8 (<cell at 0x10f5dce28: int object at 0x10f3c4c20>,) 4
+8 (<cell at 0x10f5dce28: int object at 0x10f3c4c20>,) 4
+8 (<cell at 0x10f5dce28: int object at 0x10f3c4c20>,) 4
+```
+
+注意到`__closure__`属性返回的int值指向同一个地址，它们的值都是4，这是调用时进行的赋值。
+
+可以用一种技巧避免闭包变量的延迟绑定行为，即把lambda需要使用的闭包变量变为lambda的内部参数：
+
+```
+>>> def create_multipliers():
+...     return [lambda x, i=i : i * x for i in range(5)]
+...
+>>> for multiplier in create_multipliers():
+...     print multiplier(2)
+...
+```
+
+这样就可以得到我们想要的0, 2, 4, 6, 8了。
+
+看更多细节：
+
+```
+>>> def create_multipliers():
+...     return [lambda x, i=i: i * x for i in range(5)]
+... 
+>>> ifunc = create_multipliers()
+>>> pprint.pprint(ifunc)
+[<function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10dcf3840>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10dcf38c8>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10dcf3950>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10dcf39d8>,
+ <function create_multipliers.<locals>.<listcomp>.<lambda> at 0x10dcf3a60>]
+>>> for multiplier in ifunc:
+...     print(multiplier(2), multiplier.__closure__)
+... 
+0 None
+2 None
+4 None
+6 None
+8 None
+```
+这个lambda函数没有闭包变量了。
 
