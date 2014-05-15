@@ -94,7 +94,7 @@
 
 ## 用`textwrap`规范段落
 
-用这个小工具调整代码格式很方便。常用来调整缩进或截断行。
+用这个工具规范代码很倒是很合适。它常用来调整缩进或截断行。
 
 缩进：
 
@@ -157,7 +157,7 @@
     >>> heapqsort(l)
     [3, 4, 6, 6, 7, 7, 8, 8, 9, 9]
 
-## 内建函数`any()`和`all()`的用法：
+## 内建函数`any()`和`all()`的应用场景：
 
 在enum模块说明中出现的代码，`any()`函数的典型场景，没有什么比Python自己的document更经典的了：
 
@@ -593,4 +593,212 @@ IndexError: list index out of range
 8 None
 ```
 这个lambda函数没有闭包变量了。
+
+### 模块的循环引用问题
+
+做两个模块，`a.py`：
+
+```
+import b
+
+def f():
+    return b.x
+	
+print f()
+```
+
+和`b.py`：
+
+```
+import a
+
+x = 1
+
+def g():
+    print a.f()
+```
+
+如果：
+
+```
+>>> import a
+1
+```
+
+不会出现异常，因为解释器对同一个模块仅导入一次，所以这里看起来是循环引用了，但因为`b.py`没有函数调用，所以不会出现问题。
+
+但是：
+
+```
+>>> import b
+Traceback (most recent call last):
+  	  File "<stdin>", line 1, in <module>
+  	  File "b.py", line 1, in <module>
+    import a
+  	  File "a.py", line 6, in <module>
+	print f()
+  	  File "a.py", line 4, in f
+	return b.x
+AttributeError: 'module' object has no attribute 'x'
+```
+
+虽然是同样的代码，但是这里`import`的问题在于，`b.py`中导入`a.py`时`a.py`不会再导入`b.py`，而`a.py`产生了函数调用需要使用到`b.py`，此时`b.py`并没有被导入，所以出现了属性查找失败。
+
+其实，只需将`b.py`的import语句放在函数内就可以了：
+
+```
+x = 1
+
+def g():
+    import a	# This will be evaluated only when g() is called
+    print a.f()
+```
+
+这样，只有在函数被调用时才会导入`a.py`，于是：
+
+```
+>>> import b
+>>> b.g()
+1	# Printed a first time since module 'a' calls 'print f()' at the end
+1	# Printed a second time, this one is our call to 'g'
+```
+
+### 自定义模块与Python标准库名冲突问题
+
+把Python帮助文档放在枕头边，然后，不要这么干！
+
+### Python2与Python3之间的差异问题
+
+类似这种代码，`foo.py`：
+
+```
+import sys
+
+def bar(i):
+    if i == 1:
+        raise KeyError(1)
+    if i == 2:
+        raise ValueError(2)
+
+def bad():
+    e = None
+    try:
+        bar(int(sys.argv[1]))
+    except KeyError as e:
+        print('key error')
+    except ValueError as e:
+        print('value error')
+    print(e)
+
+bad()
+```
+在Python2下的结果是：
+
+```
+$ python foo.py 1
+key error
+1
+$ python foo.py 2
+value error
+2
+```
+但是Python3中会报错：
+
+```
+$ python3 foo.py 1
+key error
+Traceback (most recent call last):
+  File "foo.py", line 19, in <module>
+    bad()
+  File "foo.py", line 17, in bad
+    print(e)
+UnboundLocalError: local variable 'e' referenced before assignment
+```
+
+问题在于Python3中，异常绑定的对象只在except代码块内部有效，参见[The try statement](https://docs.python.org/3/reference/compound_stmts.html#the-try-statement)。
+
+于是，我们可以把异常赋给一个`except`语句外的变量，这样在`except`以外的地方调用就不会出现未定义的异常了。
+
+```
+import sys
+
+def bar(i):
+    if i == 1:
+        raise KeyError(1)
+    if i == 2:
+        raise ValueError(2)
+
+def good():
+    exception = None
+    try:
+        bar(int(sys.argv[1]))
+    except KeyError as e:
+        exception = e
+        print('key error')
+    except ValueError as e:
+        exception = e
+        print('value error')
+    print(exception)
+
+good()
+```
+
+Python3中的结果：
+
+```
+$ python3 foo.py 1
+key error
+1
+$ python3 foo.py 2
+value error
+2
+```
+
+在[Python Hiring Guide](http://www.toptal.com/python#hiring-guide)中讨论了将Python2的代码迁移到Python3的一些需要注意的地方。
+
+### 误用`__del__`方法时的问题
+
+做两个模块，`mod.py`：
+
+```
+import foo
+
+class Bar(object):
+   	    ...
+    def __del__(self):
+        foo.cleanup(self.myhandle)
+```
+
+和`another_mod.py`：
+
+```
+import mod
+mybar = mod.Bar()
+```
+
+这里会得到一个`AttributeError`。
+
+参见[bug list中的另一个AttributeError](https://mail.python.org/pipermail/python-bugs-list/2009-January/069209.html): 
+
+编译器退出时，模块的全局变量会在模块被回收前就被置为`None`。`__del__()`方法可能在这种不可控的情况下被调用。所以，代码不应该过度依靠模块全局变量。
+
+在这个例子中，当`__del__()`被调用时，`foo`已经被置为`None`了。
+
+这里，我们可以使用`atexit.register()`，当代码执行完毕（正常退出）时，我们注册的析构代码会在解释器退出前执行。像这样：
+
+```
+import foo
+import atexit
+
+def cleanup(handle):
+    foo.cleanup(handle)
+
+
+class Bar(object):
+    def __init__(self):
+        ...
+        atexit.register(cleanup, self.myhandle)
+```
+
+这是一种在代码正常退出时的析构方法，简洁可靠。
 
