@@ -63,9 +63,65 @@
 
 #### pickle.dump(obj, file, protocol=None, *, fix_imports=True)
 
+对*obj*进行pickle，将结果写入[类文件对象](https://docs.python.org/3.4/glossary.html#term-file-object)*file*。等价于`Pickler(file, protocol).dump(obj)`。
+
+*protocol*指定pickle使用的协议版本，从0到`HIGHEST_PROTOCOL`取值，默认使用`DEFAULT_PROTOCOL`。如果设为负数，则使用`HIGHEST_PROTOCOL`。
+
+*file*对象必须有`write()`方法（一个接受`bytes`为唯一参数的方法）。该对象可以是通过`open(file, 'wb')`方式打开的磁盘物理文件，可以是[io.BytesIO](https://docs.python.org/3.4/library/io.html#io.BytesIO)实例，或其他拥有这种接口的任何自定义对象。
+
+如果*fix_imports*为真且*protocol*小于3，函数则会试着将Python3中的新模块名映射为Python2中的旧版，这样可以使pickle的数据流在Python2中unpickle。
+
 #### pickle.dumps(obj, protocol=None, *, fix_imports=True)
+
+除了返回值为`bytes`对象外，其他与`pickle.dump()`一致。`dump()`相当于`dumps()`后接写文件操作。
 
 #### pickle.load(file, *, fix_imports=True, encoding="ASCII", errors="strict")
 
+从[类文件对象](https://docs.python.org/3.4/glossary.html#term-file-object)*file*中读取pickle的结果，将对象还原并返回。等价于`Unpickler(file).load()`。
+
+*file*对象必须有`read()`方法（接受整型为唯一参数的方法）和`readline()`方法（没有参数），这两个方法都应该返回`bytes`对象。该对象可以是通过`open(file, 'rb')`方式打开的磁盘物理文件，可以是[io.BytesIO](https://docs.python.org/3.4/library/io.html#io.BytesIO)实例，或其他拥有这种接口的任何自定义对象。
+
+*fix_imports*, *encoding*, *errors*用来为由Python生成的pickle数据流提供兼容性支持。如果*fix_imports*为真，函数会试着将Python2中的旧模块名映射为Python3中使用的新版。*encoding*和*error*指定函数如何解码由Python2生成的8-bit字符串对象，默认值分别为`ASCII`和`strict`。*encoding*可以设为`bytes`，用来把8-bit字符串当做bytes对象读取。
+
 #### pickle.loads(bytes_object, *, fix_imports=True, encoding="ASCII", errors="strict")
+
+除了从*bytes_object*加载并还原对象以外，其他与`pickle.load()`一致。
+
+模块级异常：
+
+#### exception pickle.PickleError
+
+pickle时的通用异常，继承自`Exception`。
+
+#### exception pickle.PicklingError
+
+当`Pickler`遇到不可以被pickle的对象时抛出，继承自`PickleError`。
+
+#### exception pickle.UnpicklingError
+
+在unpickling时遇到问题抛出，如数据损坏或违反安全设置等。继承自`PickleError`。
+
+模块级类对象：
+
+#### class pickle.Pickler(file, protocol=None, *, fix_imports=True)
+
+获取一个二进制文件句柄，并写入pickle的数据流。
+
+*protocol*指定pickle使用的协议版本，从0到`HIGHEST_PROTOCOL`取值，默认使用`DEFAULT_PROTOCOL`。如果设为负数，则使用`HIGHEST_PROTOCOL`。
+
+*file*对象必须有`write()`方法（一个接受`bytes`为唯一参数的方法）。该对象可以是通过`open(file, 'wb')`方式打开的磁盘物理文件，可以是[io.BytesIO](https://docs.python.org/3.4/library/io.html#io.BytesIO)实例，或其他拥有这种接口的任何自定义对象。
+
+如果*fix_imports*为真且*protocol*小于3，函数则会试着将Python3中的新模块名映射为Python2中的旧版，这样可以使pickle的数据流在Python2中unpickle。
+
+##### dump(obj)
+
+pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
+
+##### persistent_id(obj)
+
+默认无动作，子类继承重写时使用。
+
+如果`persistent_id()`返回`None`，*obj*会照常被pickled。其他的返回值会使`Pickler`返回这个函数的返回值（`Pickler`本应得到序列化数据流并将其写入文件，若此函数有返回值，则得到此函数的返回值并写入文件），作为持久化对象的ID。这个持久化ID的解释应当定义在`Unpickler.persistent_load()`中（利用`persistent_load()`函数从持久化对象的ID还原对象，该方法定义了还原对象的过程，并返回得到的对象）。注意，`persistent_id()`的返回值不可以拥有自己的ID。
+
+##### dispatch_table
 
