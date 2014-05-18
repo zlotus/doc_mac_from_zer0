@@ -125,3 +125,121 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 ##### dispatch_table
 
+`Pickler`对象的dispatch表是`copyreg.pickle()`中用到的reduction函数的注册。dispatch表本身是一个class到其reduction函数的映射键值对。reduction函数只接受一个参数，就是其关联的class，函数行为应当遵守`__reduce__()`接口规范。
+
+`Pickler`对象默认并没有`dispatch_table`属性，该对象默认使用`copyreg`模块中定义的全局dispatch表。如果想要特定`Pickler`类或子类执行指定的序列化函数，就可以将`dispatch_table`设置为类字典对象（dict-like object）。如果`Pickler`子类设置了`dispatch_table`，则该子类会使用这个dispatch表作为默认的dispatch表。
+
+##### fast
+
+该属性已被舍弃，设为真时，pickle使用快速模式。该模式不可以用在涉及自指（self-referential）对象，否则会引起`Pickler`的无限递归。
+
+如果需要进一步提高pickle的压缩率，参考使用`pickletools.optimize()`。
+
+#### class pickle.Unpickler(file, *, fix_imports=True, encoding="ASCII", errors="strict")
+
+读取pickle数据流的二进制文件，并还原其中的对象。
+
+*file*对象必须有`read()`方法（接受整型为唯一参数的方法）和`readline()`方法（没有参数），这两个方法都应该返回`bytes`对象。该对象可以是通过`open(file, 'rb')`方式打开的磁盘物理文件，可以是[io.BytesIO](https://docs.python.org/3.4/library/io.html#io.BytesIO)实例，或其他拥有这种接口的任何自定义对象。
+
+*fix_imports*, *encoding*, *errors*用来为由Python生成的pickle数据流提供兼容性支持。如果*fix_imports*为真，函数会试着将Python2中的旧模块名映射为Python3中使用的新版。*encoding*和*error*指定函数如何解码由Python2生成的8-bit字符串对象，默认值分别为`ASCII`和`strict`。*encoding*可以设为`bytes`，用来把8-bit字符串当做bytes对象读取。
+
+##### load()
+
+从构造函数指定的文件中读取pickle数据流，并返回从中还原的对象。
+
+##### persistent_load(pid)
+
+默认行为是`raise UnpicklingError`。
+
+如果定义，则应该从给定的*pid*还原出pickled对象并返回。如果给定的*pid*不合法，则应当`raise UnpicklingError`
+
+应当与`persistent_id()`方法对应。
+
+##### find_class(module, name)
+
+函数会按需导入*module*并以*name*指定的名称返回，两个参数都是字符串。不要被这个函数的名字迷惑，它同样可以用来导入函数。
+
+子类重写这个函数可以针对特定类制定定特定的导入方式，所以存在潜在安全问题。参见"Restricting Globals"的例子。
+
+### 可以被序列化/反序列化的对象
+
+类型如下：
+
+* `None`, `True`, `False`；
+* 整型、浮点型、复数；
+* `str`, `bytes`, `bytearray`；
+* 只包含可序列化对象的集合，包括`tuple`, `list`, `set`, `dict`；
+* 模块级的函数对象（使用`def`定义在模块顶层，`lambda`函数则**不可以**）；
+* 模块级的内建函数（built-in function）；
+* 模块级的类；
+* 其`__dict__`，或调用其`__getstate__()`所得结果可以被序列化的类实例，参见“序列化类实例”；
+
+尝试pickle不可以被序列化的对象会`raise PicklingError`。需要注意的是，此时，不可控的结果可能已经被写入指定文件中。尝试pickle递归层级深的对象时，可能会因为超出解释器设定的最大递归层级而导致`raise RuntimeError`，可以通过设置`sys.setrecursionlimit()`调整递归层级，不过请谨慎使用这个函数，因为可能会导致解释器崩溃。
+
+函数（内建函数或用户定义函数）在被序列化时，使用的是函数全名（参见[qualified name](https://docs.python.org/3.4/glossary.html#term-qualified-name)），这就是为什么`lambda`函数不可以被序列化——所有的匿名函数都有同一个名字：`<lambda>`。函数被序列化时，只有函数所在的模块名，与函数名会被序列化，函数体及其属性不会被序列化。因此，在反序列化时，函数所属的模块必须是可以被导入的，而且模块必须包含这个函数被序列化的名称，否则会抛出异常。
+
+类似的，在反序列化时，类也需要反序列化的环境中，有它在被序列化时使用的全名。同样的，类体及其数据不会被序列化。所以，在下面的例子中`attr`不会存在于反序列化的环境中：
+
+```
+class Foo:
+    attr = 'A class attribute'
+
+picklestring = pickle.dumps(Foo)
+```
+
+这就是可序列化的函数或类必须定义在模块级的原因。
+
+类似的，在序列化类实例时，其类体和类数据不会跟着实例一起被序列化，只有实例数据会被序列化。这种机制可以使得，在我们修改类定义、给类增加方法之后，仍然可以通过载入原来版本类实例的序列化数据来还原该实例。如果你准备长期使用一个对象，可能会导致同时存在较多版本的类体，可以为实例添加版本号，这样的话，就可以通过类的`__setstate__()`接口得到恰当的还原版本。
+
+### 序列化类实例
+
+我们来了解一下序列化/反序列化类实例的普适机制，从而可以做到定义、制定、控制序列化/反序列化类实例的过程。
+
+通常，使一个实例可序列化不需要附加任何代码。pickle模块默认会通过Python的内省机制获得实例的类及属性。而当实例反序列化时，他的`__init__()`函数通常不会被调用，其默认动作是：先创建一个未初始化的实例，而后通过update其`__dict__`的方式还原属性，像这样：
+
+```
+def save(obj):
+    return (obj.__class__, obj.__dict__)
+
+def load(cls, attributes):
+    obj = cls.__new__(cls)
+    obj.__dict__.update(attributes)
+    return obj
+```
+
+我们可以通过定义一下的一个或几个方法来修改序列化的默认行为：
+
+#### object.__getnewargs_ex__()
+
+对于使用4版或更高版协议的pickle，实现了`__getnewargs_ex__()`的类可以控制在unpickling时传给`__new__()`方法的参数。方法必须以`(args, kwargs)`返回从而提供构建实例所需的参数，其中*args*是表示位置参数的`tuple`，而*kwargs*是表示关键字参数的`dict`。这些参数会被传给`__new__()`。
+
+如果类的`__new__()`方法只接受关键字参数，则应当实现这个方法。如果不是，为了兼容性，更推荐实现`__getnewargs__()`方法。
+
+#### object.__getnewargs__()
+
+这个方法同上一个方法类似，只不过支持到版本2或更高的协议。它要求返回的*args*是一个将要传给`__new__()`方法的`tuple`。
+
+在版本4或更高的协议中，如果定义了`__getnewargs_ex__()`就不会再唤起`__getnewargs__()`。
+
+#### object.__getstate__()
+
+Classes can further influence how their instances are pickled; if the class defines the method __getstate__(), it is called and the returned object is pickled as the contents for the instance, instead of the contents of the instance’s dictionary. If the __getstate__() method is absent, the instance’s __dict__ is pickled as usual.
+
+类还可以进一步控制其实例的序列化过程。如果类定义了`__getstate__()`，它就会被调用，其返回的对象是被当做实例内容序列化的，而通常是当做实例的`__dict__`进行序列化的。如果`__getstate__()`未定义，实例的`__dict__`会被照常序列化。
+
+#### object.__setstate__(state)
+
+当反序列化时，如果定义了`__setstate__()`，就会调用它并取回还原实例所需要的实例状态，此时不要求实例的状态对象必须是`dict`。否则，需要的实例对象必须是`dict`，取回字典后会将字典内容更新给这个新的类实例。
+
+注意，如果`__getstate__()`返回值经布尔测试为假，则在反序列化时`__setstate__()`不会被调用。
+
+参见“控制有状态的对象”了解`__getstate__()`和`__setstate__()`的使用。
+
+注意，在反序列化时，实例的`__getattr__()`, `__getattribute__()`, `__setattr__()`方法可能会被调用，而这几个函数需要模型内部不变量存在，所以该类应当实现`__getnewargs__()`或`__getnewargs_ex__()`来准备这些内部不变量，否则`__new__()`和`__init__()`都不会被调用。
+
+可以看出，其实pickle并不直接调用上面的几个函数。事实上，这几个函数是复制协议的一部分，它们实现了`__reduce__()`接口。复制协议为在序列化或复制对象的过程中取得所需数据提供了统一接口。
+
+尽管这个协议功能很强，但是直接在类中实现`__reduce__()`接口容易产生错误。因此，设计类时应当尽可能的使用高级接口（比如`__getnewargs_ex__()`, `__getstate__()`, `__setstate__()`）。后面可以看到适合直接实现`__reduce__()`接口的状况（可能因为别无他法，或是为了获得更好的性能）。
+
+#### object.__reduce__()
+
