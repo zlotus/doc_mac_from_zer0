@@ -123,11 +123,15 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 如果`persistent_id()`返回`None`，*obj*会照常被pickled。其他的返回值会使`Pickler`返回这个函数的返回值（`Pickler`本应得到序列化数据流并将其写入文件，若此函数有返回值，则得到此函数的返回值并写入文件），作为持久化对象的ID。这个持久化ID的解释应当定义在`Unpickler.persistent_load()`中（利用`persistent_load()`函数从持久化对象的ID还原对象，该方法定义了还原对象的过程，并返回得到的对象）。注意，`persistent_id()`的返回值不可以拥有自己的ID。
 
+用法参见下面的“持久化外部对象”。
+
 ##### dispatch_table
 
 `Pickler`对象的dispatch表是`copyreg.pickle()`中用到的reduction函数的注册。dispatch表本身是一个class到其reduction函数的映射键值对。reduction函数只接受一个参数，就是其关联的class，函数行为应当遵守`__reduce__()`接口规范。
 
-`Pickler`对象默认并没有`dispatch_table`属性，该对象默认使用`copyreg`模块中定义的全局dispatch表。如果想要特定`Pickler`类或子类执行指定的序列化函数，就可以将`dispatch_table`设置为类字典对象（dict-like object）。如果`Pickler`子类设置了`dispatch_table`，则该子类会使用这个dispatch表作为默认的dispatch表。
+`Pickler`对象默认并没有`dispatch_table`属性，该对象默认使用`copyreg`模块中定义的全局dispatch表。如果想要特定`Pickler`类或子类执行指定的序列化函数，就可以将`dispatch_table`设置为类字典对象（dict-like object）。如果`Pickler`子类设置了`dispatch_table`，则该子类会使用这个表作为默认的dispatch表。
+
+用法参见下面的“dispatch表示例”。
 
 ##### fast
 
@@ -155,6 +159,8 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 应当与`persistent_id()`方法对应。
 
+用法参见下面的“持久化外部对象”。
+
 ##### find_class(module, name)
 
 函数会按需导入*module*并以*name*指定的名称返回，两个参数都是字符串。不要被这个函数的名字迷惑，它同样可以用来导入函数。
@@ -172,7 +178,7 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 * 模块级的函数对象（使用`def`定义在模块顶层，`lambda`函数则**不可以**）；
 * 模块级的内建函数（built-in function）；
 * 模块级的类；
-* 其`__dict__`，或调用其`__getstate__()`所得结果可以被序列化的类实例，参见“序列化类实例”；
+* 其`__dict__`，或调用其`__getstate__()`所得结果可以被序列化的类实例，参见下面的“序列化类实例”；
 
 尝试pickle不可以被序列化的对象会`raise PicklingError`。需要注意的是，此时，不可控的结果可能已经被写入指定文件中。尝试pickle递归层级深的对象时，可能会因为超出解释器设定的最大递归层级而导致`raise RuntimeError`，可以通过设置`sys.setrecursionlimit()`调整递归层级，不过请谨慎使用这个函数，因为可能会导致解释器崩溃。
 
@@ -231,11 +237,11 @@ Classes can further influence how their instances are pickled; if the class defi
 
 当反序列化时，如果定义了`__setstate__()`，就会调用它并取回还原实例所需要的实例状态，此时不要求实例的状态对象必须是`dict`。否则，需要的实例对象必须是`dict`，取回字典后会将字典内容更新给这个新的类实例。
 
-注意，如果`__getstate__()`返回值经布尔测试为假，则在反序列化时`__setstate__()`不会被调用。
+**注意**，如果`__getstate__()`返回值经布尔测试为假，则在反序列化时`__setstate__()`不会被调用。
 
 参见“控制有状态的对象”了解`__getstate__()`和`__setstate__()`的使用。
 
-注意，在反序列化时，实例的`__getattr__()`, `__getattribute__()`, `__setattr__()`方法可能会被调用，而这几个函数需要模型内部不变量存在，所以该类应当实现`__getnewargs__()`或`__getnewargs_ex__()`来准备这些内部不变量，否则`__new__()`和`__init__()`都不会被调用。
+**注意**，在反序列化时，实例的`__getattr__()`, `__getattribute__()`, `__setattr__()`方法可能会被调用，而这几个函数需要模型内部不变量存在，所以该类应当实现`__getnewargs__()`或`__getnewargs_ex__()`来准备这些内部不变量，否则`__new__()`和`__init__()`都不会被调用。
 
 可以看出，其实pickle并不直接调用上面的几个函数。事实上，这几个函数是复制协议的一部分，它们实现了`__reduce__()`接口。复制协议为在序列化或复制对象的过程中取得所需数据提供了统一接口。
 
@@ -243,3 +249,152 @@ Classes can further influence how their instances are pickled; if the class defi
 
 #### object.__reduce__()
 
+函数不需要参数，应当返回一个字符串，或更详细的，返回一个`tuple`（返回值通常被称为“化简值”）。
+
+如果返回字符串，该字符串会被当做`object`在全局变量中的名称。这个字符串应当是`object`在模块中的相对名称，pickle模块会搜索模块命名空间找到对象所属模块。这种行为常在单例模式使用。
+
+如果返回`tuple`，则会包含2到5个元素，可选元素可以省略或设置为`None`：
+
+* 必选元素，一个可调用对象，该对象会在创建最初版`object`时调用；
+* 必选元素，一个`tuple`，是可调用对象的参数，如果可调用对象不接受参数，必须提供一个空`tuple`（不能因为空参而省略）；
+* 可选元素，用于表示`object`的状态，将被传给`__setstat__()`函数。如果`object`没有`__setstat__()`方法，则这个元素必须是dict类型，并会被加入`object.__dict__`中。
+* 可选元素，一个返回连续项的迭代器（而不是序列）。这些项会被`append()`逐个加入`object`，或被`extend()`批量加入`object`。这个元素主要用于list的子类，也可以用于那些实现了`append()`和`extend()`方法的类。（具体是使用`append()`还是`extend()`取决于pickle协议版本以及这个元素的项数，所以这两个方法必须同时被类支持）；
+* 可选元素，一个返回连续键值对的迭代器（而不是序列）。这些键值对将会以`object[key] = value`的方式提供给`object`。这个元素主要用于dict子类，也可以用于那些实现了`__setitem__()`的类。
+
+#### object.__reduce_ex__(protocol)
+
+除了实现上面的`__reduce__()`外，也可以选择实现`__reduce_ex__()`。这两个方法的唯一区别是`__reduce_ex__()`接受一个整型参数用于指定pickle版本。如果定义了这个函数，则会覆盖`__reduce__()`的行为。这个函数主要用于为以前的Python版本提供向后兼容性。
+
+### 持久化外部对象
+
+pickle模块提供了对除数据流之外的对象引用的支持，为对象持久化提供便利。这些外部对象以持久化ID的方式被pickle模块引用，这个ID应是一个整数的字符串形式（用于0版协议）或是一个任意对象（用于任意新版协议）。
+
+pickle模块不提供对持久化ID的解析工作，这个工作应由用户分别定义在`Pickler.persistent_id()`和`Unpickler.persistent_load()`中。
+
+要通过使用持久化ID进行对象持久化，必须在`Pickler`中实现`persistent_id()`，该方法接受需要被持久化的对象作为参数，返回一个`None`或返回该对象的持久化ID。如果返回`None`，该对象会被按照默认方式持久化为数据流；如果返回持久化ID的字符串，则会吧该对象持久化为这个ID，同时需要在`Unpickler`中定义通过这个ID还原对象的方法。
+
+要勇敢持久化对象ID还原对象，必须在`Unpicker`中实现`persistent_load()`，该方法接受持久化ID对象并返回还原这个以持久化ID形式被引用的外部对象。
+
+下面的例子可以加强对使用持久化ID进行外部对象持久化的理解：
+
+```
+# Simple example presenting how persistent ID can be used to pickle
+# external objects by reference.
+
+import pickle
+import sqlite3
+from collections import namedtuple
+
+# Simple class representing a record in our database.
+MemoRecord = namedtuple("MemoRecord", "key, task")
+
+class DBPickler(pickle.Pickler):
+
+    def persistent_id(self, obj):
+        # Instead of pickling MemoRecord as a regular class instance, we emit a
+        # persistent ID.
+        if isinstance(obj, MemoRecord):
+            # Here, our persistent ID is simply a tuple, containing a tag and a
+            # key, which refers to a specific record in the database.
+            return ("MemoRecord", obj.key)
+        else:
+            # If obj does not have a persistent ID, return None. This means obj
+            # needs to be pickled as usual.
+            return None
+
+
+class DBUnpickler(pickle.Unpickler):
+
+    def __init__(self, file, connection):
+        super().__init__(file)
+        self.connection = connection
+
+    def persistent_load(self, pid):
+        # This method is invoked whenever a persistent ID is encountered.
+        # Here, pid is the tuple returned by DBPickler.
+        cursor = self.connection.cursor()
+        type_tag, key_id = pid
+        if type_tag == "MemoRecord":            # Fetch the referenced record from the database and return it.
+            cursor.execute("SELECT * FROM memos WHERE key=?", (str(key_id),))
+            key, task = cursor.fetchone()
+            return MemoRecord(key, task)
+        else:
+            # Always raises an error if you cannot return the correct object.
+            # Otherwise, the unpickler will think None is the object referenced
+            # by the persistent ID.
+            raise pickle.UnpicklingError("unsupported persistent object")
+
+
+def main():
+    import io
+    import pprint
+
+    # Initialize and populate our database.
+    conn = sqlite3.connect(":memory:")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE memos(key INTEGER PRIMARY KEY, task TEXT)")
+    tasks = (
+        'give food to fish',
+        'prepare group meeting',
+        'fight with a zebra',
+        )
+    for task in tasks:
+        cursor.execute("INSERT INTO memos VALUES(NULL, ?)", (task,))
+
+    # Fetch the records to be pickled.
+    cursor.execute("SELECT * FROM memos")
+    memos = [MemoRecord(key, task) for key, task in cursor]
+    # Save the records using our custom DBPickler.
+    file = io.BytesIO()
+    DBPickler(file).dump(memos)
+
+    print("Pickled records:")
+    pprint.pprint(memos)
+
+    # Update a record, just for good measure.
+    cursor.execute("UPDATE memos SET task='learn italian' WHERE key=1")
+
+    # Load the records from the pickle data stream.
+    file.seek(0)
+    memos = DBUnpickler(file, conn).load()
+
+    print("Unpickled records:")
+    pprint.pprint(memos)
+
+
+if __name__ == '__main__':
+    main()
+```
+
+### dispatch表示例
+
+如果想要对指定的类型执行自定义的序列化函数，而又不想增加额外的代码，就可以使用`Pickler`的`dispatch_table`。
+
+在[copyreg](https://docs.python.org/3.4/library/copyreg.html?highlight=copyreg#module-copyreg)模块的`copyreg.dispatch_table`中定义了全局dispatch表。通常应该复制这个全局表在进行修改。
+
+比如：
+
+```
+f = io.BytesIO()
+p = pickle.Pickler(f)
+p.dispatch_table = copyreg.dispatch_table.copy()
+p.dispatch_table[SomeClass] = reduce_SomeClass
+```
+
+上面的代码修改了`Pickler`实例的dispatch表，使其对*SomeClass*进行特殊处理。而下面的代码：
+
+```
+class MyPickler(pickle.Pickler):
+    dispatch_table = copyreg.dispatch_table.copy()
+    dispatch_table[SomeClass] = reduce_SomeClass
+f = io.BytesIO()
+p = MyPickler(f)
+```
+
+将dispatch表直接写在了`Pickler`的子类定义中，于是所有的这个子类实例都会使用这个修改过的dispatch表了。也可以用下面的代码达到同样的效果：
+
+```
+copyreg.pickle(SomeClass, reduce_SomeClass)
+f = io.BytesIO()
+p = pickle.Pickler(f)
+```
