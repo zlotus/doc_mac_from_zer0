@@ -4,7 +4,7 @@
 
 **首先，需要特别注意，对于错误的甚至恶意的字节流，pickle并没有安全措施。所以，不要unpickle从不受信来源得到的数据。**
 
-## 与别的序列化相关模块的关系
+## 与其他序列化相关模块的关系
 
 `pickle`和`marshal`模块提供了把Python对象转为字节流存储或传输，从字节流还原Python对象的功能。
 
@@ -45,23 +45,23 @@
 
 注：序列化是一个比持久化更底层的概念，虽然`pickle`模块也涉及到文件对象操作，但它并不负责持久化对象的命名问题，也不关心持久化对象的一致性操作问题。`pickle`可以把一个复杂对象转为字节流，也可以将这个字节流准确的还原为Python对象。我们可以选择把这个字节流存入文件，同样也可以选择通过网络传输或是存入数据库。`shelve`模块提供了一个pickle/unpickle对象到DBM-style数据库的接口。
 
-### 模块接口
+## 模块接口
 
 要序列化一个对象（包括其继承树），调用`dumps()`函数即可。同样的，要反序列化一段数据流，只需调用`loads()`即可。如果需要对序列化/反序列化过程进行更多控制，创建`Pickler`/`Unpickler`对象就可以了。
 
 模块级常量：
 
-#### pickle.HIGHEST_PROTOCOL
+### pickle.HIGHEST_PROTOCOL
 
 一个用来表示模块提供的最高级协议的整型。可以用来为`dump()`、`dumps()`、`Pickler`构造函数提供*protocol*参数。
 
-#### pickle.DEFAULT_PROTOCOL
+### pickle.DEFAULT_PROTOCOL
 
 一个用来表示模块当前使用的协议的整型。可能会低于`HIGHEST_PROTOCOL`。当下是`3`版协议。
 
 模块级函数：
 
-#### pickle.dump(obj, file, protocol=None, *, fix_imports=True)
+### pickle.dump(obj, file, protocol=None, *, fix_imports=True)
 
 对*obj*进行pickle，将结果写入[类文件对象](https://docs.python.org/3.4/glossary.html#term-file-object)*file*。等价于`Pickler(file, protocol).dump(obj)`。
 
@@ -71,11 +71,11 @@
 
 如果*fix_imports*为真且*protocol*小于3，函数则会试着将Python3中的新模块名映射为Python2中的旧版，这样可以使pickle的数据流在Python2中unpickle。
 
-#### pickle.dumps(obj, protocol=None, *, fix_imports=True)
+### pickle.dumps(obj, protocol=None, *, fix_imports=True)
 
 除了返回值为`bytes`对象外，其他与`pickle.dump()`一致。`dump()`相当于`dumps()`后接写文件操作。
 
-#### pickle.load(file, *, fix_imports=True, encoding="ASCII", errors="strict")
+### pickle.load(file, *, fix_imports=True, encoding="ASCII", errors="strict")
 
 从[类文件对象](https://docs.python.org/3.4/glossary.html#term-file-object)*file*中读取pickle的结果，将对象还原并返回。等价于`Unpickler(file).load()`。
 
@@ -83,27 +83,27 @@
 
 *fix_imports*, *encoding*, *errors*用来为由Python生成的pickle数据流提供兼容性支持。如果*fix_imports*为真，函数会试着将Python2中的旧模块名映射为Python3中使用的新版。*encoding*和*error*指定函数如何解码由Python2生成的8-bit字符串对象，默认值分别为`ASCII`和`strict`。*encoding*可以设为`bytes`，用来把8-bit字符串当做bytes对象读取。
 
-#### pickle.loads(bytes_object, *, fix_imports=True, encoding="ASCII", errors="strict")
+### pickle.loads(bytes_object, *, fix_imports=True, encoding="ASCII", errors="strict")
 
 除了从*bytes_object*加载并还原对象以外，其他与`pickle.load()`一致。
 
 模块级异常：
 
-#### exception pickle.PickleError
+### exception pickle.PickleError
 
 pickle时的通用异常，继承自`Exception`。
 
-#### exception pickle.PicklingError
+### exception pickle.PicklingError
 
 当`Pickler`遇到不可以被pickle的对象时抛出，继承自`PickleError`。
 
-#### exception pickle.UnpicklingError
+### exception pickle.UnpicklingError
 
 在unpickling时遇到问题抛出，如数据损坏或违反安全设置等。继承自`PickleError`。
 
 模块级类对象：
 
-#### class pickle.Pickler(file, protocol=None, *, fix_imports=True)
+### class pickle.Pickler(file, protocol=None, *, fix_imports=True)
 
 获取一个二进制文件句柄，并写入pickle的数据流。
 
@@ -113,11 +113,11 @@ pickle时的通用异常，继承自`Exception`。
 
 如果*fix_imports*为真且*protocol*小于3，函数则会试着将Python3中的新模块名映射为Python2中的旧版，这样可以使pickle的数据流在Python2中unpickle。
 
-##### dump(obj)
+#### dump(obj)
 
 pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
-##### persistent_id(obj)
+#### persistent_id(obj)
 
 默认无动作，子类继承重写时使用。
 
@@ -125,7 +125,7 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 用法参见下面的“持久化外部对象”。
 
-##### dispatch_table
+#### dispatch_table
 
 `Pickler`对象的dispatch表是`copyreg.pickle()`中用到的reduction函数的注册。dispatch表本身是一个class到其reduction函数的映射键值对。reduction函数只接受一个参数，就是其关联的class，函数行为应当遵守`__reduce__()`接口规范。
 
@@ -133,13 +133,13 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 用法参见下面的“dispatch表示例”。
 
-##### fast
+#### fast
 
 该属性已被舍弃，设为真时，pickle使用快速模式。该模式不可以用在涉及自指（self-referential）对象，否则会引起`Pickler`的无限递归。
 
 如果需要进一步提高pickle的压缩率，参考使用`pickletools.optimize()`。
 
-#### class pickle.Unpickler(file, *, fix_imports=True, encoding="ASCII", errors="strict")
+### class pickle.Unpickler(file, *, fix_imports=True, encoding="ASCII", errors="strict")
 
 读取pickle数据流的二进制文件，并还原其中的对象。
 
@@ -147,11 +147,11 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 *fix_imports*, *encoding*, *errors*用来为由Python生成的pickle数据流提供兼容性支持。如果*fix_imports*为真，函数会试着将Python2中的旧模块名映射为Python3中使用的新版。*encoding*和*error*指定函数如何解码由Python2生成的8-bit字符串对象，默认值分别为`ASCII`和`strict`。*encoding*可以设为`bytes`，用来把8-bit字符串当做bytes对象读取。
 
-##### load()
+#### load()
 
 从构造函数指定的文件中读取pickle数据流，并返回从中还原的对象。
 
-##### persistent_load(pid)
+#### persistent_load(pid)
 
 默认行为是`raise UnpicklingError`。
 
@@ -161,13 +161,13 @@ pickle对象*obj*，并将数据流写入构造函数中指定的*file*。
 
 用法参见下面的“持久化外部对象”。
 
-##### find_class(module, name)
+#### find_class(module, name)
 
 函数会按需导入*module*并以*name*指定的名称返回，两个参数都是字符串。不要被这个函数的名字迷惑，它同样可以用来导入函数。
 
-子类重写这个函数可以针对特定类制定定特定的导入方式，所以存在潜在安全问题。参见"Restricting Globals"的例子。
+子类重写这个函数可以针对特定类制定定特定的导入方式，所以存在潜在安全问题。参见"限制全局量"的例子。
 
-### 可以被序列化/反序列化的对象
+## 可以被序列化/反序列化的对象
 
 类型如下：
 
@@ -197,7 +197,7 @@ picklestring = pickle.dumps(Foo)
 
 类似的，在序列化类实例时，其类体和类数据不会跟着实例一起被序列化，只有实例数据会被序列化。这种机制可以使得，在我们修改类定义、给类增加方法之后，仍然可以通过载入原来版本类实例的序列化数据来还原该实例。如果你准备长期使用一个对象，可能会导致同时存在较多版本的类体，可以为实例添加版本号，这样的话，就可以通过类的`__setstate__()`接口得到恰当的还原版本。
 
-### 序列化类实例
+## 序列化类实例
 
 我们来了解一下序列化/反序列化类实例的普适机制，从而可以做到定义、制定、控制序列化/反序列化类实例的过程。
 
@@ -215,25 +215,25 @@ def load(cls, attributes):
 
 我们可以通过定义一下的一个或几个方法来修改序列化的默认行为：
 
-#### object.__getnewargs_ex__()
+### `object.__getnewargs_ex__()`
 
 对于使用4版或更高版协议的pickle，实现了`__getnewargs_ex__()`的类可以控制在unpickling时传给`__new__()`方法的参数。方法必须以`(args, kwargs)`返回从而提供构建实例所需的参数，其中*args*是表示位置参数的`tuple`，而*kwargs*是表示关键字参数的`dict`。这些参数会被传给`__new__()`。
 
 如果类的`__new__()`方法只接受关键字参数，则应当实现这个方法。如果不是，为了兼容性，更推荐实现`__getnewargs__()`方法。
 
-#### object.__getnewargs__()
+### `object.__getnewargs__()`
 
 这个方法同上一个方法类似，只不过支持到版本2或更高的协议。它要求返回的*args*是一个将要传给`__new__()`方法的`tuple`。
 
 在版本4或更高的协议中，如果定义了`__getnewargs_ex__()`就不会再唤起`__getnewargs__()`。
 
-#### object.__getstate__()
+### `object.__getstate__()`
 
 Classes can further influence how their instances are pickled; if the class defines the method __getstate__(), it is called and the returned object is pickled as the contents for the instance, instead of the contents of the instance’s dictionary. If the __getstate__() method is absent, the instance’s __dict__ is pickled as usual.
 
 类还可以进一步控制其实例的序列化过程。如果类定义了`__getstate__()`，它就会被调用，其返回的对象是被当做实例内容序列化的，而通常是当做实例的`__dict__`进行序列化的。如果`__getstate__()`未定义，实例的`__dict__`会被照常序列化。
 
-#### object.__setstate__(state)
+### `object.__setstate__(state)`
 
 当反序列化时，如果定义了`__setstate__()`，就会调用它并取回还原实例所需要的实例状态，此时不要求实例的状态对象必须是`dict`。否则，需要的实例对象必须是`dict`，取回字典后会将字典内容更新给这个新的类实例。
 
@@ -247,7 +247,7 @@ Classes can further influence how their instances are pickled; if the class defi
 
 尽管这个协议功能很强，但是直接在类中实现`__reduce__()`接口容易产生错误。因此，设计类时应当尽可能的使用高级接口（比如`__getnewargs_ex__()`, `__getstate__()`, `__setstate__()`）。后面可以看到适合直接实现`__reduce__()`接口的状况（可能因为别无他法，或是为了获得更好的性能）。
 
-#### object.__reduce__()
+### `object.__reduce__()`
 
 函数不需要参数，应当返回一个字符串，或更详细的，返回一个`tuple`（返回值通常被称为“化简值”）。
 
@@ -261,7 +261,7 @@ Classes can further influence how their instances are pickled; if the class defi
 * 可选元素，一个返回连续项的迭代器（而不是序列）。这些项会被`append()`逐个加入`object`，或被`extend()`批量加入`object`。这个元素主要用于list的子类，也可以用于那些实现了`append()`和`extend()`方法的类。（具体是使用`append()`还是`extend()`取决于pickle协议版本以及这个元素的项数，所以这两个方法必须同时被类支持）；
 * 可选元素，一个返回连续键值对的迭代器（而不是序列）。这些键值对将会以`object[key] = value`的方式提供给`object`。这个元素主要用于dict子类，也可以用于那些实现了`__setitem__()`的类。
 
-#### object.__reduce_ex__(protocol)
+### `object.__reduce_ex__(protocol)`
 
 除了实现上面的`__reduce__()`外，也可以选择实现`__reduce_ex__()`。这两个方法的唯一区别是`__reduce_ex__()`接受一个整型参数用于指定pickle版本。如果定义了这个函数，则会覆盖`__reduce__()`的行为。这个函数主要用于为以前的Python版本提供向后兼容性。
 
@@ -398,3 +398,153 @@ copyreg.pickle(SomeClass, reduce_SomeClass)
 f = io.BytesIO()
 p = pickle.Pickler(f)
 ```
+### 控制有状态的对象
+
+下面的代码示例了如何修改序列化的行为。代码中，`TextReader`类负责打开文件，每次调用其`readline()`方法则返回文件中的一行字符。在pickle这个类的实例时，除了文件对象，其他属性都会被保存。当unpickle实例时，需要重新打开文件，而后将`readline()`恢复到pickle前的位置。实现这些功能需要实现`__setstate__()`和`__getstate__()`方法：
+
+```
+class TextReader:
+    """Print and number lines in a text file."""
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.file = open(filename)
+        self.lineno = 0
+
+    def readline(self):
+        self.lineno += 1
+        line = self.file.readline()
+        if not line:
+            return None
+        if line.endswith('\n'):
+            line = line[:-1]
+        return "%i: %s" % (self.lineno, line)
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes. Always use the dict.copy()
+        # method to avoid modifying the original state.
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        del state['file']
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes (i.e., filename and lineno).
+        self.__dict__.update(state)
+        # Restore the previously opened file's state. To do so, we need to
+        # reopen it and read from it until the line count is restored.
+        file = open(self.filename)
+        for _ in range(self.lineno):
+            file.readline()
+        # Finally, save the file.
+        self.file = file
+```
+
+使用时会像这样：
+
+```
+>>> reader = TextReader("hello.txt")
+>>> reader.readline()
+'1: Hello world!'
+>>> reader.readline()
+'2: I am line number two.'
+>>> new_reader = pickle.loads(pickle.dumps(reader))
+>>> new_reader.readline()
+'3: Goodbye!'
+```
+
+## 限制全局量
+
+pickle模块在反序列化时，会默认导入序列化数据流中涉及的任何类和函数。对于软件来说，这种行为潜在很大的安全问题，因为这种行为等同于允许解释器运行任何外部代码。比如我们手动写一段序列化数据流交给pickle模块：
+
+```
+>>> import pickle
+>>> pickle.loads(b"cos\nsystem\n(S'echo hello world'\ntR.")
+hello world
+0
+```
+
+这个例子中，我们导入了`os.system()`函数，并让它接受了`echo hello world`这个参数，等同于直接让系统运行了`echo hello world`命令，虽然这个例子是无害的，但是不难想象如何通过pickle模块做出危险动作。
+
+因此，我们应该通过`find_class()`控制pickle模块的导入行为。这并不只是一个“查找类”的函数，事实上`Unpickler.find_class()`会在任何需要导入全局量（比如类、函数等）的时候被调用。于是，我们可以禁止全局量，或把全局量限制在一个安全的集合内进行“导入审查”。
+
+这是一个仅允许部分内建模块被`Unpickler`导入的例子：
+
+```
+import builtins
+import io
+import pickle
+
+safe_builtins = {
+    'range',
+    'complex',
+    'set',
+    'frozenset',
+    'slice',
+}
+
+class RestrictedUnpickler(pickle.Unpickler):
+
+    def find_class(self, module, name):
+        # Only allow safe classes from builtins.
+        if module == "builtins" and name in safe_builtins:
+            return getattr(builtins, name)
+        # Forbid everything else.
+        raise pickle.UnpicklingError("global '%s.%s' is forbidden" %
+                                     (module, name))
+
+def restricted_loads(s):
+    """Helper function analogous to pickle.loads()."""
+    return RestrictedUnpickler(io.BytesIO(s)).load()
+```
+
+使用时的效果：
+
+```
+>>> restricted_loads(pickle.dumps([1, 2, range(15)]))
+[1, 2, range(0, 15)]
+>>> restricted_loads(b"cos\nsystem\n(S'echo hello world'\ntR.")
+Traceback (most recent call last):
+  ...
+pickle.UnpicklingError: global 'os.system' is forbidden
+>>> restricted_loads(b'cbuiltins\neval\n'
+...                  b'(S\'getattr(__import__("os"), "system")'
+...                  b'("echo hello world")\'\ntR.')
+Traceback (most recent call last):
+  ...
+pickle.UnpicklingError: global 'builtins.eval' is forbidden
+```
+
+就像例子中示范的这样，你必须要明白，代码将要反序列化的对象有怎样的潜在危险。所以，从安全的角度考虑，我们可以使用`xmlrpc.client`模块或是第三方解决方案代替pickle。
+
+## 通用示例
+
+使用`dump()`序列化：
+
+```
+import pickle
+
+# An arbitrary collection of objects supported by pickle.
+data = {
+    'a': [1, 2.0, 3, 4+6j],
+    'b': ("character string", b"byte string"),
+    'c': set([None, True, False])
+}
+
+with open('data.pickle', 'wb') as f:
+    # Pickle the 'data' dictionary using the highest protocol available.
+    pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+```
+
+使用`load()`反序列化：
+
+```
+import pickle
+
+with open('data.pickle', 'rb') as f:
+    # The protocol version used is detected automatically, so we do not
+    # have to specify it.
+    data = pickle.load(f)
+```
+
