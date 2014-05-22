@@ -6,7 +6,7 @@
 
 ## 概述
 
-要使用本模块，必须先创建一个`Connection`对象，以连接数据库。下面代码中的数据会写入example.db中
+要使用本模块，必须先创建一个`Connection`对象，以连接数据库。下面代码中的数据会写入example.db中：
 
 ```
 import sqlite3
@@ -15,7 +15,7 @@ conn = sqlite3.connect('example.db')
 
 如果数据库名指定为`:memory:`时，则会建立一个内存数据库。
 
-当有力`Connection`对象后，需要使用`Cursor`对象的`execute()`方法来执行SQL指令：
+当有了`Connection`对象后，需要使用`Cursor`对象的`execute()`方法来执行SQL指令：
 
 ```
 c = conn.cursor()
@@ -38,7 +38,7 @@ c.close()
 
 在程序中，通常需要执行的SQL语句需要使用Python代码在运行时的变量。请注意，直接使用字符串的`%`运算符组合运行时需要的SQL指令是非常危险的，这可能会导致恶意的SQL注入。
 
-作为替代，推荐使用DB-API参数：`?`。在SQL语句中，可以使用`?`作为占位符，然后在`execute()`中将所需变量放在元组中替换这些占位符。
+作为替代，推荐使用DB-API规范参数：`?`。在SQL语句中，可以使用`?`作为占位符，然后在`execute()`中将所需变量放在元组中替换这些占位符。
 
 ```
 # Never do this -- insecure!
@@ -183,3 +183,195 @@ con.close()
 
 默认下，在用户定义的functions, aggregates, converters, authorizer回调中不会有跟踪信息。如果仍想要调试，则可以调用这个函数，并把*flag*设为真。此后就会从`sys.stderr`中得到跟踪信息了。将*flag*置为假可以再次关闭输出调试跟踪信息。
 
+## Connection对象
+
+### class sqlite3.Connection
+
+SQLite数据库连接类有如下属性：
+
+### isolation_level
+
+获得或设置数据库的事务隔离等级。使用`None`表示自动提交，或使用“DEFERRED”, “IMMEDIATE”, “EXCLUSIVE”中的一个。详情参见“事务控制”。
+
+### in_transaction
+
+当有活动中的事务（有未提交的更改）时为真，否则为假。这是一项只读属性。
+
+### cursor([cursorClass])
+
+这个cursor函数接受一个可选参数*cursorClass*。如果提供参数，则参数必须是一个继承自`sqlite3.Cursor`的游标类。
+
+### commit()
+
+使用这个方法提交当前事务。如果这个方法未被调用，则其他连接到该数据库上的用户将看不到你当前（自最后一次`commit()`调用以来）的更改。如果你在疑问为什么对数据库的写操作没有生效，请检查是否忘记使用该方法提交事务。
+
+### rollback()
+
+这个方法会回滚自最后一次`commit()`调用以来的对数据库的所有更改。
+
+### close()
+
+这个方法会断开数据库连接。注意，这个方法不会自动调用`commit()`，如果没有调用`commit()`直接断开数据库连接，最后一次更改将会丢失。
+
+### execute(sql[, parameters])
+
+非常规的SQL语句执行捷径。这个方法会调用`cursor()`方法生成一个临时游标，然后将参数传给临时游标的`execute()`并调用。
+
+### executemany(sql[, parameters])
+
+非常规的SQL语句执行捷径。这个方法会调用`cursor()`方法生成一个临时游标，然后将参数传给临时游标的`executemany()`并调用。
+
+### executescript(sql_script)
+
+非常规的SQL语句执行捷径。这个方法会调用`cursor()`方法生成一个临时游标，然后将参数传给临时游标的`executescript()`并调用。
+
+### create_function(name, num_params, func)
+
+这个方法会新建一个名为*name*的用户定义函数，以便在以后的SQL语句中使用。*num_params*为该函数接受参数的数目，*func*是一个Python可调用对象，将会在SQL语句中以SQL函数的方式被调用。
+
+函数应当返回SQLite支持的任何数据类型：bytes, str, int, float, None.
+
+示例：
+
+```
+import sqlite3
+import hashlib
+
+def md5sum(t):
+    return hashlib.md5(t).hexdigest()
+
+con = sqlite3.connect(":memory:")
+con.create_function("md5", 1, md5sum)
+cur = con.cursor()
+cur.execute("select md5(?)", (b"foo",))
+print(cur.fetchone()[0])
+```
+
+### create_aggregate(name, num_params, aggregate_class)
+
+新建用户定义的合计函数。
+
+合计函数必须实现一个名为`step()`的方法，接受*num_params*个参数，以及一个`finalize()`方法用来返回合计函数的结果。
+
+`finalize()`方法应当返回SQLite支持的任何数据类型：bytes, str, int, float, None.
+
+示例：
+
+```
+import sqlite3
+
+class MySum:
+    def __init__(self):
+        self.count = 0
+
+    def step(self, value):
+        self.count += value
+
+    def finalize(self):
+        return self.count
+
+con = sqlite3.connect(":memory:")
+con.create_aggregate("mysum", 1, MySum)
+cur = con.cursor()
+cur.execute("create table test(i)")
+cur.execute("insert into test(i) values (1)")
+cur.execute("insert into test(i) values (2)")
+cur.execute("select mysum(i) from test")
+print(cur.fetchone()[0])
+```
+
+### create_collation(name, callable)
+
+新建一个名为*name*的排序规则，使用*callable*实现功能。传入的Python可调用对象会接到两个字符串参数，当第一个参数比第二个参数在序列中的：位置低时返回-1，位置相同时返回0，位置高时返回1。留意到排序规则仅影响到排序（SQL中的ORDER BY语句），因此，这个比较并不会影响到其他SQL操作。
+
+注意，*callable*接收的字符串通常是`UTF-8`编码。
+
+示例，逆序排列：
+
+```
+import sqlite3
+
+def collate_reverse(string1, string2):
+    if string1 == string2:
+        return 0
+    elif string1 < string2:
+        return 1
+    else:
+        return -1
+
+con = sqlite3.connect(":memory:")
+con.create_collation("reverse", collate_reverse)
+
+cur = con.cursor()
+cur.execute("create table test(x)")
+cur.executemany("insert into test(x) values (?)", [("a",), ("b",)])
+cur.execute("select x from test order by x collate reverse")
+for row in cur:
+    print(row)
+con.close()
+```
+
+要取消*name*排序规则的注册，只需要将*callable*置为`None`即可：
+
+```
+con.create_collation("reverse", None)
+```
+
+### interrupt()
+
+可以从别的线程调用这个方法，以取消该连接上正在执行的任何查询。之后查询将会退出，其调用者会收到异常。
+
+### set_authorizer(authorizer_callback)
+
+用来注册访问控制回调函数。每当有访问数据库某列的行为时，都会触发这个回调函数。当访问应当被允许时返回`SQLITE_OK`，访问应当被终止事返回`SQLITE_DENY`，该列应当被当做NULL时返回`SQLITE_IGNORE`，这几个常量就在本模块中。
+
+回调函数的第一个参数表示允许什么类型的操作，第二和第三个参数是常规参数还是是`None`取决于第一个参数，第四个参数是数据库表名（如“main”, “temp”），第五个参数可以是负责访问控制的触发器或视图的名称，也可以是`None`表示允许SQL语句直接访问。
+
+### set_progress_handler(handler, n)
+
+用来注册类似计划任务的回调函数。SQLite虚拟机每执行*n*条指令就会触发一次*handler*。当你想要在一个耗时操作（如更新GUI中的数据）中接到SQLite按计划执行特定动作时，这个方法会非常有用。
+
+### set_trace_callback(trace_callback)
+
+用来注册调试用回调函数。每当SQLite后台执行SQL语句时，都会触发*trace_callback*。
+
+*trace_callback*只接受唯一参数，即当前执行的SQL语句字符串，回调函数不需要返回值。注意，数据库后台不只是执行传给`Cursor.execute()`的语句，也执行其他来源的事务（如来自Python事务管理模块，或触发了当前数据库定义的触发器）。
+
+将`None`当做*trace_callback*传给这个方法将取消跟踪回调。
+
+### enable_load_extension(enabled)
+
+用来启用/停用SQLite从共享库中加载插件的功能。SQLite插件可以定义普通函数、合计函数、实现虚拟表。其中最著名的一个就是更随SQLite一起发布的全文检索插件。
+
+加载插件的功能是默认停用的。
+
+```
+import sqlite3
+
+con = sqlite3.connect(":memory:")
+
+# enable extension loading
+con.enable_load_extension(True)
+
+# Load the fulltext search extension
+con.execute("select load_extension('./fts3.so')")
+
+# alternatively you can load the extension using an API call:
+# con.load_extension("./fts3.so")
+
+# disable extension laoding again
+con.enable_load_extension(False)
+
+# example from SQLite wiki
+con.execute("create virtual table recipe using fts3(name, ingredients)")
+con.executescript("""
+    insert into recipe (name, ingredients) values ('broccoli stew', 'broccoli peppers cheese tomatoes');
+    insert into recipe (name, ingredients) values ('pumpkin stew', 'pumpkin onions garlic celery');
+    insert into recipe (name, ingredients) values ('broccoli pie', 'broccoli cheese onions flour');
+    insert into recipe (name, ingredients) values ('pumpkin pie', 'pumpkin sugar flour butter');
+    """)
+for row in con.execute("select rowid, name, ingredients from recipe where name match 'pie'"):
+    print(row)
+```
+
+    
