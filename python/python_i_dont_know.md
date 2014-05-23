@@ -802,3 +802,11 @@ class Bar(object):
 
 这是一种在代码正常退出时的析构方法，简洁可靠。
 
+## sqlite3的内存数据库
+
+在`connect()`函数中，如果*database*参数设置为字符串`:memory:`，模块就会在内存中建立一个数据库：
+
+```
+with sqlite3.connect(":memory:") as conn:
+    pass
+```
