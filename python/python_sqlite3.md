@@ -284,7 +284,7 @@ print(cur.fetchone()[0])
 
 新建一个名为*name*的排序规则，使用*callable*实现功能。传入的Python可调用对象会接到两个字符串参数，当第一个参数比第二个参数在序列中的：位置低时返回-1，位置相同时返回0，位置高时返回1。留意到排序规则仅影响到排序（SQL中的ORDER BY语句），因此，这个比较并不会影响到其他SQL操作。
 
-注意，*callable*接收的字符串通常是`UTF-8`编码。
+注意，*callable*接收的字节串通常是`UTF-8`编码。
 
 示例，逆序排列：
 
@@ -374,4 +374,173 @@ for row in con.execute("select rowid, name, ingredients from recipe where name m
     print(row)
 ```
 
-    
+### load_extension(path)
+
+用来从*path*加载SQLite插件，不过，在此之前，必须调用`enable_load_extension()`启用插件加载功能。
+
+### row_factory
+
+你可以修改这个属性，提供另一个可调用对象，该对象接受一个包含游标及原始记录数据的元组作为参数，对象应当返回你想要的记录结果。通过修改这个方法，我们可以得到更高级的记录返回值。比如，实现返回一个对象，可以通过`row[column_name]`的形式访问记录域，像这样：
+
+```
+import sqlite3
+
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+con = sqlite3.connect(":memory:")
+con.row_factory = dict_factory
+cur = con.cursor()
+cur.execute("select 1 as a")
+print(cur.fetchone()["a"])
+```
+
+当然，上面的只是示例。如果你确实认为，查询记录以元组形式返回功能较弱，而且你需要记录可以通过列名访问的功能，则可以选择把`row_factory`设置为一个为此优化过的类型：`sqlite3.Row`。这个类型同时支持下标访问和大小写敏感的列名访问，而且几乎没有额外的内存开支。这可能比你用字典实现或用db_row实现更好。
+
+### text_factory
+
+通过这个属性，可以控制SQLite的`TEXT`类型在查询返回时会转为哪种Python类。此属性默认设为`str`，模块遇到`TEXT`会返回Unicode对象。如果你希望让其返回字节串，则可以将此属性设为`bytes`。
+
+考虑到程序效率，可以通过将此属性设置为`sqlite3.OptimizedUnicode`来实现：当遇到non-ASCII数据时，返回`str`对象，否则返回`bytes`对象。
+
+当然，你可以将此属性设为任意可调用对象，只需保证该对象接受一个字节流作为参数，而后返回想要的结果对象即可。
+
+模拟代码示例：
+
+```
+import sqlite3
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+
+AUSTRIA = "\xd6sterreich"
+
+# by default, rows are returned as Unicode
+cur.execute("select ?", (AUSTRIA,))
+row = cur.fetchone()
+assert row[0] == AUSTRIA
+
+# but we can make sqlite3 always return bytestrings ...
+con.text_factory = bytes
+cur.execute("select ?", (AUSTRIA,))
+row = cur.fetchone()
+assert type(row[0]) is bytes
+# the bytestrings will be encoded in UTF-8, unless you stored garbage in the
+# database ...
+assert row[0] == AUSTRIA.encode("utf-8")
+
+# we can also implement a custom text_factory ...
+# here we implement one that appends "foo" to all strings
+con.text_factory = lambda x: x.decode("utf-8") + "foo"
+cur.execute("select ?", ("bar",))
+row = cur.fetchone()
+assert row[0] == "barfoo"
+```
+
+### total_changes
+
+此属性记录了从数据库建立连接开始，一共有多少行记录被更新、插入、删除过。
+
+### iterdump()
+
+返回一个用于dump数据库的迭代器，在想要保存内存数据库是会非常有用。此函数提供与SQLite的Shell中`.dump`命令相同的功能。
+
+```
+# Convert file existing_db.db to SQL dump file dump.sql
+import sqlite3, os
+
+con = sqlite3.connect('existing_db.db')
+with open('dump.sql', 'w') as f:
+    for line in con.iterdump():
+        f.write('%s\n' % line)
+```
+
+## Cursor对象
+
+### class sqlite3.Cursor
+
+`Cursor`实例有下列属性和方法：
+
+### execute(sql[, parameters])
+
+执行一条SQL语句，语句可能是参数化的（使用占位符代替SQL字符）。sqlite3模块支持两种占位符：问号占位符和命名占位符。
+
+关于两种占位符的示例：
+
+```
+import sqlite3
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+cur.execute("create table people (name_last, age)")
+
+who = "Yeltsin"
+age = 72
+
+# This is the qmark style:
+cur.execute("insert into people values (?, ?)", (who, age))
+
+# And this is the named style:
+cur.execute("select * from people where name_last=:who and age=:age", {"who": who, "age": age})
+
+print(cur.fetchone())
+```
+
+需要注意的是，`execute()`只能执行一条SQL语句，如果使用它一次执行多条语句时，函数会抛出`sqlite3.Warning`异常。如果想通过一次调用执行多条SQL语句，可以使用`executescript()`。
+
+### executemany(sql, seq_of_parameters)
+
+将多组参数套入同一条SQL语句执行，为SQL提供的参数可以说序列，也可以是迭代器。
+
+使用迭代器：
+
+```
+import sqlite3
+
+class IterChars:
+    def __init__(self):
+        self.count = ord('a')
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.count > ord('z'):
+            raise StopIteration
+        self.count += 1
+        return (chr(self.count - 1),) # this is a 1-tuple
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+cur.execute("create table characters(c)")
+
+theIter = IterChars()
+cur.executemany("insert into characters(c) values (?)", theIter)
+
+cur.execute("select c from characters")
+print(cur.fetchall())
+```
+
+或是生成器：
+
+```
+import sqlite3
+import string
+
+def char_generator():
+    for c in string.ascii_lowercase:
+        yield (c,)
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+cur.execute("create table characters(c)")
+
+cur.executemany("insert into characters(c) values (?)", char_generator())
+
+cur.execute("select c from characters")
+print(cur.fetchall())
+```
+
