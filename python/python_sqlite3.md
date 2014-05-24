@@ -544,3 +544,57 @@ cur.execute("select c from characters")
 print(cur.fetchall())
 ```
 
+### executescript(sql_script)
+
+用来为一次执行多条SQL语句提供方便（并未出现在[PEP249](http://legacy.python.org/dev/peps/pep-0249/)中，非标准方法）。方法会先提交一个`COMMIT`语句，而后将*sql_script*作为它的参数执行。
+
+*sql_script*可以是`str`或`bytes`。
+
+用法示例：
+
+```
+import sqlite3
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+cur.executescript("""
+    create table person(
+        firstname,
+        lastname,
+        age
+    );
+
+    create table book(
+        title,
+        author,
+        published
+    );
+
+    insert into book(title, author, published)
+    values (
+        'Dirk Gently''s Holistic Detective Agency',
+        'Douglas Adams',
+        1987
+    );
+    """)
+```
+
+### fetchone()
+
+从结果集中取出下一条记录，并以元组形式返回。当没有结果时返回`None`。
+
+### fetchmany(size=cursor.arraysize)
+
+从及国际中取出下来*size*条记录，并以返回一个元组列表。当没有结果时返回空序列。
+
+如果不指定*size*，则默认使用当前游标的arraysize。此方法会尽可能的满足*size*指定的记录数，当没有更多记录时，返回结果序列可能小于*size*指定的大小。
+
+一般的，使用游标的arraysize可以提供较好的执行效率，如果用户指定了*size*属性，最好使链接中的所有`fetchmany()`的size属性都使用是这个值。
+
+### fetchall()
+
+取回一次查询的所有结果。应注意到游标的arraysize会影响到此方法的效率。当没有结果时返回空列表。
+
+### rowcount
+
+`Cursor`类实现了此属性，
