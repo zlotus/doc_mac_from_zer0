@@ -597,4 +597,300 @@ cur.executescript("""
 
 ### rowcount
 
-`Cursor`类实现了此属性，
+虽然模块中的`Cursor`类实现了此属性，但数据库引擎对“rows affected”与“rows selected”的定义各有不同。
+
+对于`executemany()`执行的语句，更改的行数也计入`rowcount`属性。
+
+属性服从Python DB API规范，如果当前游标上没有执行任何`executeXX()`方法，或接口没有定义最近一次操作的`rowcount`，`rowcount`值会被置为-1。这包括了`SELECT`语句，因为在结果集取完之前，我们无法确定查询一共会返回多少行记录。
+
+SQLite 3.6.5以前的版本在执行`DELETE FROM table`语句后会把此属性置为0。
+
+### lastrowid
+
+这是一个只读属性，记录最后一次被修改行的ID。此属性只有在`execute()`提交`INSERT`语句时才会被设置。但是对于在`executemany()`方法中提交的`INSERT`语句，属性会被置为`None`。
+
+### description
+
+此属性为最近一次查询的结果集提供列名。为了保留符合Python DB API规范的兼容性，属性为每一列提供一个7元素元组，除了第一个元素外，其他的元素皆为`None`。
+
+即使最近一次`SELECT`语句没有结果返回，列名属性依然会被设置。
+
+## Row对象
+
+### class sqlite3.Row
+
+`Row`对象是一个为`Connection`的`row_factory`属性优化过的对象。此对象在实现时模仿元组的行为特性。
+
+此对象也支持使用列名的映射访问（类似字典键-值映射）、下标索引、迭代访问、相等比较以及使用`len()`返回长度。
+
+如果两个`Row`对象有相同的列且列中的成员也相同时，这两个`Row`对象会在相等比较时判定为真。
+
+### keys()
+
+此方法以元组形式返回查询的所有列名。在查询结束后，其返回结果为`Cursor.description`中每个元组 的首元素。
+
+假设我们用如下代码新建表：
+
+```
+conn = sqlite3.connect(":memory:")
+c = conn.cursor()
+c.execute('''create table stocks
+(date text, trans text, symbol text,
+ qty real, price real)''')
+c.execute("""insert into stocks
+          values ('2006-01-05','BUY','RHAT',100,35.14)""")
+conn.commit()
+c.close()
+```
+
+接下来插入列：
+
+```
+>>> conn.row_factory = sqlite3.Row
+>>> c = conn.cursor()
+>>> c.execute('select * from stocks')
+<sqlite3.Cursor object at 0x7f4e7dd8fa80>
+>>> r = c.fetchone()
+>>> type(r)
+<class 'sqlite3.Row'>
+>>> tuple(r)
+('2006-01-05', 'BUY', 'RHAT', 100.0, 35.14)
+>>> len(r)
+5
+>>> r[2]
+'RHAT'
+>>> r.keys()
+['date', 'trans', 'symbol', 'qty', 'price']
+>>> r['qty']
+100.0
+>>> for member in r:
+...     print(member)
+...
+2006-01-05
+BUY
+RHAT
+100.0
+35.14
+```
+
+## SQLite类型与Python类型
+
+### 概况
+
+SQLite原生支持的类型有：NULL, INTEGER, REAL, TEXT, BLOB。
+
+下列Python类型可以直接传给SQLite：
+
+Python type  |SQLite type
+-------------|-----------
+None         |NULL
+int          |INTEGER
+float        |REAL
+str          |TEXT
+bytes        |BLOB
+
+下列SQLite类型可以默认转为Python类型：
+
+SQLite type  |Python type
+-------------|-----------
+Null         |None
+INTEGER      |int
+REAL         |float
+TEXT         |具体类型由`text_factory`属性决定，默认为`str`
+BLOB         |bytes
+
+有两种方法扩展模块类型系统支持的类型：可以将附加的Python类通过对象适配器存入SQLite；或将SQLite类型通过转换函数存为Python类型。
+
+### 使用适配器将附加Python类型存入SQLite数据库
+
+像上面描述的那样，SQLite只支持很有限的数据类型。要在SQLite中使用其他的Python类型，则需要将这些附加类型适配成模块支持的数据类型：None, int, float, str, bytes。
+
+sqlite3模块使用Python对象适配器，在[PEP246](http://www.python.org/dev/peps/pep-0246)中定义，遵守的协议为PrepareProtocol。
+
+有两种方式使sqlite3模块能够将用户自定义Python类型适配为SQLite数据库支持的类型。
+
+#### 使对象自动适配
+
+当你自己编写类型代码时，这个方法很适用，示例：
+
+```
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+```
+
+现在你想要将这个“点”对象存在数据库的一个列中。首先，你需要在Python->SQLite支持的数据类型中选择一种能够表达“点”对象的类型（现在假设我们选择`str`类型，并使用分号将坐标隔开）；然后你需要在类中实现方法`__conform__(self, protocol)`，该方法必须返回“点”对象适配给数据库的结果（这里是形如"x;y"的`str`）。这个方法的参数*protocol*的值将会是`sqlite3.PrepareProtocol`，示例：
+
+```
+import sqlite3
+
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+    def __conform__(self, protocol):
+        if protocol is sqlite3.PrepareProtocol:
+            return "%f;%f" % (self.x, self.y)
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+
+p = Point(4.0, -3.2)
+cur.execute("select ?", (p,))
+print(cur.fetchone()[0])
+```
+
+#### 为类型注册适配函数
+
+另一种实现是通过模块级适配器注册函数`sqlite3.register_adapter`为特定类型注册转换函数，示例：
+
+```
+import sqlite3
+
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+def adapt_point(point):
+    return "%f;%f" % (point.x, point.y)
+
+sqlite3.register_adapter(Point, adapt_point)
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+
+p = Point(4.0, -3.2)
+cur.execute("select ?", (p,))
+print(cur.fetchone()[0])
+```
+
+sqlite3模块为类型`datetime.date`和`datetime.datetime`提供了两种默认适配器。但现在假设我们需要将`datetime.datetime`存成一个Unix风格的时间戳，而不是通常的ISO风格，示例：
+
+```
+import sqlite3
+import datetime
+import time
+
+def adapt_datetime(ts):
+    return time.mktime(ts.timetuple())
+
+sqlite3.register_adapter(datetime.datetime, adapt_datetime)
+
+con = sqlite3.connect(":memory:")
+cur = con.cursor()
+
+now = datetime.datetime.now()
+cur.execute("select ?", (now,))
+print(cur.fetchone()[0])
+```
+
+### 将SQLite数据转为自定义Python对象
+
+编写适配器可以将Python对象转为SQLite支持的类型，但如果要使得整个映射机制完整，除了要实现Python到SQLite的适配，还需要SQLite到Python的转换。
+
+回到前面“点”对象的例子，我们将点表示为型为"x;y"的字符串存于SQLite中。
+
+首先，我们需要写一个转换器，接受一个`str`为参数，并返回`Point`对象。
+
+注意，不论你将什么类型存入数据库，转换函数总是接受一个`str`类型的参数。
+
+```
+def convert_point(s):
+    x, y = map(float, s.split(b";"))
+    return Point(x, y)
+```
+
+然后，我们需要让sqlite3模块知道我们从数据库中查询出的结果其实是一个“点”对象，有两种实现方式：
+
+* 通过类型声明，提供默认类型；
+* 查询时在列名中明确指出；
+
+这两种方法都已经在“模块函数与常量”一节中提到，通过为参数*detect_types*设置`PARSE_DECLTYPES`和`PARSE_COLNAMES`常量来侦测返回类型。
+
+下面的代码是这两种方法的示例：
+
+```
+import sqlite3
+
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+    def __repr__(self):
+        return "(%f;%f)" % (self.x, self.y)
+
+def adapt_point(point):
+    return ("%f;%f" % (point.x, point.y)).encode('ascii')
+
+def convert_point(s):
+    x, y = list(map(float, s.split(b";")))
+    return Point(x, y)
+
+# Register the adapter
+sqlite3.register_adapter(Point, adapt_point)
+
+# Register the converter
+sqlite3.register_converter("point", convert_point)
+
+p = Point(4.0, -3.2)
+
+#########################
+# 1) Using declared types
+con = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES)
+cur = con.cursor()
+cur.execute("create table test(p point)")
+
+cur.execute("insert into test(p) values (?)", (p,))
+cur.execute("select p from test")
+print("with declared types:", cur.fetchone()[0])
+cur.close()
+con.close()
+
+#######################
+# 1) Using column names
+con = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_COLNAMES)
+cur = con.cursor()
+cur.execute("create table test(p)")
+
+cur.execute("insert into test(p) values (?)", (p,))
+cur.execute('select p as "p [point]" from test')
+print("with column names:", cur.fetchone()[0])
+cur.close()
+con.close()
+```
+
+### 默认适配器与转换器
+
+上面提到，sqlite3模块为类型`datetime.date`和`datetime.datetime`提供了默认适配器，分别将这两种类型以ISO日期和ISO时间戳的形式存入SQLite。
+
+为`datetime.date`注册的转换器叫“date”，为`datetime.datetime`注册的转换器叫“timestamp”。
+
+所以，你可以在大多数情况下，不需要提供任何额外代码，就直接使用date/timestamps。
+
+示例：
+
+```
+import sqlite3
+import datetime
+
+con = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+cur = con.cursor()
+cur.execute("create table test(d date, ts timestamp)")
+
+today = datetime.date.today()
+now = datetime.datetime.now()
+
+cur.execute("insert into test(d, ts) values (?, ?)", (today, now))
+cur.execute("select d, ts from test")
+row = cur.fetchone()
+print(today, "=>", row[0], type(row[0]))
+print(now, "=>", row[1], type(row[1]))
+
+cur.execute('select current_date as "d [date]", current_timestamp as "ts [timestamp]"')
+row = cur.fetchone()
+print("current_date", row[0], type(row[0]))
+print("current_timestamp", row[1], type(row[1]))
+```
+
+如果SQLite中的时间戳拥有超过6个元素，默认转换器会自动将精确值截断在毫秒级。
+
