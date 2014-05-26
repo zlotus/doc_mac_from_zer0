@@ -894,3 +894,95 @@ print("current_timestamp", row[1], type(row[1]))
 
 如果SQLite中的时间戳拥有超过6个元素，默认转换器会自动将精确值截断在毫秒级。
 
+### 事务处理
+
+在默认状态下，sqlite3模块在执行一个DML语句（`INSERT`/`UPDATE`/`DELETE`/`REPLACE`）前就已经进入了一个事务，在执行下一个非DML、非查询（`INSERT`/`UPDATE`/`DELETE`/`REPLACE`/`SELECT`）语句前提交DML语句所在事务。
+
+也就是，如果你在一个事务中写了诸如`CREATE TABLE ...`、`VACUUM`、`PRAGMA`的语句，sqlite3模块就会在执行这条语句前自动提交事务。这种行为有两个原因：一是这种语句中，有一些不能在事务中提交；二是为了满足模块对事务状态（该事务是否处于活动状态）跟踪的需要。访问`Connection.in_transaction`属性可以查看当前事务状态。
+
+你可以通过修改`connect()`中的*isolation_level*或`isolation_level`属性，控制`BEGIN`语句的执行方式。
+
+如果你希望**自动提交**事务，就把`isolation_level`置为`None`。
+
+如果使用默认，则`BEGIN`语句会控制事务。也可以设置成SQLite支持的“DEFERRED”, “IMMEDIATE” or “EXCLUSIVE”之一。
+
+## 高效使用sqlite3
+
+### 使用快捷方法
+
+直接使用`Connection`对象的非标准方法：`execute()`, `executemany()`, `executescript()`，可以避免显示声明多余的`Cursor`对象，从而简化代码。事实上，在执行这些非标准方法时，游标对象被隐式的创建并返回了。通过这种方式，你可以使用仅一次调用就执行`SELECT`语句，并迭代其返回的结果集。
+
+```
+import sqlite3
+
+persons = [
+    ("Hugo", "Boss"),
+    ("Calvin", "Klein")
+    ]
+
+con = sqlite3.connect(":memory:")
+
+# Create the table
+con.execute("create table person(firstname, lastname)")
+
+# Fill the table
+con.executemany("insert into person(firstname, lastname) values (?, ?)", persons)
+
+# Print the table contents
+for row in con.execute("select firstname, lastname from person"):
+    print(row)
+
+print("I just deleted", con.execute("delete from person").rowcount, "rows")
+```
+
+### 使用列名代替索引
+
+`sqlite3.Row`类型是一个非常有用的记录封装类。
+
+通过`Row`封装的记录既可以使用索引访问（类似元组），也可以使用列名访问（大小写敏感，类似字典）。
+
+```
+import sqlite3
+
+con = sqlite3.connect(":memory:")
+con.row_factory = sqlite3.Row
+
+cur = con.cursor()
+cur.execute("select 'John' as name, 42 as age")
+for row in cur:
+    assert row[0] == row["name"]
+    assert row["name"] == row["nAmE"]
+    assert row[1] == row["age"]
+    assert row[1] == row["AgE"]
+```
+
+### 使用链接对象管理上下文
+
+数据库链接对象可以控制事务的自动提交以及回滚操作。如果遇到异常，则回滚事务，否则提交：
+
+```
+import sqlite3
+
+con = sqlite3.connect(":memory:")
+con.execute("create table person (id integer primary key, firstname varchar unique)")
+
+# Successful, con.commit() is called automatically afterwards
+with con:
+    con.execute("insert into person(firstname) values (?)", ("Joe",))
+
+# con.rollback() is called after the with block finishes with an exception, the
+# exception is still raised and must be caught
+try:
+    with con:
+        con.execute("insert into person(firstname) values (?)", ("Joe",))
+except sqlite3.IntegrityError:
+    print("couldn't add Joe twice")
+```
+
+## 常见问题
+
+### 多线程
+
+旧版SQLite存在多线程共享一个链接的问题，这就是为什么Python模块禁止线程间共享同一个链接或游标对象。如果你执意要使用共享，会得到一个运行时异常。
+
+只有一个例外，调用`interrupt()`方法，因为只有从另一个线程调用此方法才有意义。
