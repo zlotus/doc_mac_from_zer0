@@ -34,3 +34,115 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 ## 进程参数
 
+下列函数和属性提供了当前进程及用户的信息与相应操作。
+
+### os.ctermid()¶
+
+返回控制进程的终端所关联的文件。
+
+```
+>>> os.ctermid()
+'/dev/tty'
+```
+
+支持：Unix。
+
+### os.environ
+
+用`str`储存当前环境变量的映射。如`environ['HOME']`返回当前的用户目录（部分系统支持），相当于C语言中的`getenv("HOME")`。
+
+这个映射在`os`模块被第一次导入的时候就生成了（如，当Python作为`site.py`的一部分启动的时候）。在此之后被修改的环境变量不会体现在`os.environ`中，除非直接修改`os.environ`本身。
+
+如果平台支持`putenv()`，此映射可能既可以用来查询环境变量，也可以用来修改环境变量。`putenv()`会在修改映射时被自动调用。
+
+在Unix上，映射的键与值会使用`sys.getfilesystemencoding()`和`surrogateescape`控制编码异常。如果希望使用不同的编码，可以访问`environb`属性。
+
+注意：直接调用`putenv()`并不会改变`os.environ`，所以还是修改`os.environ`比较好。
+
+注意：在某些环境中（包括FreeBSD和Mac OS X），直接修改`environ`属性可能会导致内存泄露。详情参见操作系统的`putenv`命令或函数。
+
+如果平台不支持`putenv()`，一份被修改的环境变量映射可能会被进程创建函数传给子进程，使得子进程可以使用修改了的环境变量。
+
+如果平台支持`unsetenv()`，就可以通过删除此映射中的项来释放环境变量。当`os.environ`中的项被删除时（包括`pop()`或`clear()`等方法）会自动调用`unsetenv()`。
+
+### os.environb
+
+`os.environ`的`bytes`版。`environ`与`environb`是同步的，修改其中一个会导致另一个也被修改。
+
+`environb`只有在`supports_bytes_environ`为真的时候可用。
+
+### os.chdir(path)
+### os.fchdir(fd)
+### os.getcwd()
+
+这三个函数在“文件和路径”中详细描述。
+
+### os.fsencode(filename)
+
+使用文件系统编码及`surrogateescape`异常控制来编码*filename*，在Windows上使用`strict`异常控制。若*filename*为`bytes`则直接返回这个字节串。
+
+### os.fsdecode(filename)
+
+使用文件系统编码及`surrogateescape`异常控制来解码*filename*，在Windows上使用`strict`异常控制。若*filename*为`str`则直接返回这个字符串。
+
+### os.getenv(key, default=None)
+
+查询环境变量，如果存在就返回*key*，不存在就返回*default*。*key*、*default*及返回值都是`str`。
+
+在Unix上，映射的键与值会使用`sys.getfilesystemencoding()`和`surrogateescape`控制编码异常。如果希望使用不同的编码，可以调用`os.getenvb()`。
+
+支持：多数Unix，Windows。
+
+### os.getenvb(key, default=None)
+
+查询环境变量，如果存在就返回*key*，不存在就返回*default*。*key*、*default*及返回值都是`bytes`。
+
+支持：多数Unix。
+
+### os.get_exec_path(env=None)
+
+返回可执行对象的搜索路径列表，类似于shell在执行一个命令时的动作。如果指定*env*，则应该是能够查找到PATH的环境变量。*env*默认为空时，会使用`os.environ`。
+
+```
+>>> os.get_exec_path()
+['/usr/bin', '/bin', '/usr/sbin', '/sbin', '/usr/local/bin', '/opt/X11/bin']
+```
+
+### os.getegid()
+
+返回对当前进程有效的组ID，与当前进程中被执行文件的设置ID位有关。
+
+支持：Unix。
+
+### os.geteuid()
+
+返回对当前进程有效的用户ID。
+
+支持：Unix。
+
+### os.getgid()
+
+返回当前进程所属的组ID。
+
+支持：Unix。
+
+### os.getgrouplist(user, group)
+
+返回*user*所属的组ID列表。如果*group*不在列表中，则会被加入。*group*通常来自*user*密码记录中的组ID域。
+
+支持：Unix。
+
+### os.getgroups()
+
+返回当前进程关联的附加组ID。
+
+支持：Unix。
+
+注意：`getgroups()`在Mac OS X中的行为与在其他Unix中的行为有所不同。如果Python解释器编译部署在10.5及更早的版本，`getgroups()`返回与当前用户进程相关的的有效组ID列表，这时的列表的长度会被一个系统定义的整数限制，通常是16，而且列表可能会适当的权限下被`setgroups()`修改。如果是大于10.5的版本，`getgroups()`返回与当前进程有效用户ID相关的用户所在用户组的许可列表。组许可列表可以在进程生命周期的任何时间被修改，`setgroups()`不会修改列表，而且列表大小不再限制在16上。可以通过`sysconfig.get_config_var()`查询部署值`MACOSX_DEPLOYMENT_TARGET`。
+
+### os.getlogin()
+
+返回进程控制终端的登录用户名。通常在需要使用到环境变量`LOGNAME`或`USERNAME`时调用，以检查登录用户名，或使用`pwd.getpwuid(os.getuid())[0]`得到当前有效的用户登录名。
+
+支持：Unix，Windows。
+
