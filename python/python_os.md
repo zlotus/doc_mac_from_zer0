@@ -146,3 +146,32 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 支持：Unix，Windows。
 
+### os.getpgid(pid)
+
+返回ID为*pid*的进程所属进程组的ID。如果*pid*为0，则返回当前进程所属进程组的ID。
+
+支持：Unix。
+
+### os.getpgrp()
+
+返回当前进程所属的进程组ID。
+
+支持：Unix。
+
+### os.getpid()
+
+放回当前进程ID。
+
+支持：Unix，Windows。
+
+### os.getppid()
+
+返回父进程ID。在Unix上，当父进程退出时，返回值为当前进程的一个初始化进程的ID；而在Windows上仍然返回其父进程原有的ID，不过此时这个ID可能意见被其他进程占用了。
+
+支持：Unix，Windows。
+
+### os.getpriority(which, who)
+
+获得程序的调度优先级。*which*的值应是`PRIO_PROCESS`, `PRIO_PGRP`, `PRIO_USER`中的一个，*who*是相对于*which*（`PRIO_PROCESS`的进程标识符，`PRIO_PGRP`的进程组标识符，`PRIO_USER`的用户ID）的。将*who*置为0表示调用的进程，调用的进程所属的进程组，或调用进程的用户ID。
+
+支持：Unix。
