@@ -175,3 +175,164 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 获得程序的调度优先级。*which*的值应是`PRIO_PROCESS`, `PRIO_PGRP`, `PRIO_USER`中的一个，*who*是相对于*which*（`PRIO_PROCESS`的进程标识符，`PRIO_PGRP`的进程组标识符，`PRIO_USER`的用户ID）的。将*who*置为0表示调用的进程，调用的进程所属的进程组，或调用进程的用户ID。
 
 支持：Unix。
+
+### os.PRIO_PROCESS
+### os.PRIO_PGRP
+### os.PRIO_USER
+
+为`getpriority()`和`setpriority()`提供参数。
+
+支持：Unix。
+
+### os.getresuid()
+
+以元组形式返回当前进程的实际组ID（rgid）、有效组ID（egid）和设置组ID（sgid）。
+
+支持：Unix。
+
+### os.getuid()
+
+返回当前进程的用户ID。
+
+支持：Unix。
+
+### os.initgroups(username, gid)
+
+根据用户*username*在的所有组，以及*gid*指定的组，调用系统的initgroups()函数以初始化组访问列表。
+
+### os.putenv(key, value)
+
+将名为*key*的环境变量值置为*value*。此修改会影响使用`os.system()`, `os.popen()`, `os.fork()`, `os.execv()`发起的子进程。
+
+支持：多数Unix，Windows。
+
+注意：在某些环境中（包括FreeBSD和Mac OS X），直接修改`environ`属性可能会导致内存泄露。详情参见操作系统的`putenv`命令或函数。
+
+如果操作系统支持`putenv()`，对`os.environ`的赋值会调用`putenv()`去修改对应的环境变量。但是，直接使用`putenv()`修改环境变量不会更新`os.environ`。所以，更推荐使用`os.environ`给环境变量赋值。
+
+### os.setegid(egid)
+
+设置当前进程的有效组ID。
+
+支持：Unix。
+
+### os.seteuid(euid)
+
+设置当前进程的有效用户ID。
+
+支持：Unix。
+
+### os.setgid(gid)
+
+设置当前进程组ID。
+
+支持：Unix。
+
+### os.setgroups(groups)
+
+将当前进程关联的附加组置为*groups*。*groups*必须是一个序列，其中的每个元素都是组ID的整数。通常只有超级用户可以使用此函数。
+
+支持：Unix。
+
+注意：对于Mac OS X，*groups*的长度可能会受到系统最大有效组ID的限制，通常为16。详情参见`getgroups()`的说明文档。
+
+### os.setpgrp()
+
+根据系统的支持（如果支持的话），调用系统的`setpgrp()`或`setpgrp(0, 0)`函数。语法参见`man`命令。
+
+支持：Unix。
+
+### os.setpgid(pid, pgrp)
+
+调用系统的`setpgid()`函数，ID为`pid`的进程所属进程组的ID置为*pgrp*。语法参见`man`命令。
+
+支持：Unix。
+
+### os.setpriority(which, who, priority)
+
+设置程序的调度优先级。*which*的值应是`PRIO_PROCESS`, `PRIO_PGRP`, `PRIO_USER`中的一个，*who*是相对于*which*（`PRIO_PROCESS`的进程标识符，`PRIO_PGRP`的进程组标识符，`PRIO_USER`的用户ID）的。将*who*置为0表示调用的进程，调用的进程所属的进程组，或调用进程的用户ID。*priority*在-20到19取值，默认为0，值越小越容易调度。
+
+支持：Unix。
+
+### os.setregid(rgid, egid)
+
+设置当前进程的实际组ID和有效组ID。
+
+支持：Unix。
+
+### os.setresgid(rgid, egid, sgid)
+
+设置当前进程的实际组ID、有效组ID和设置组ID。
+
+支持：Unix。
+
+### os.setresuid(ruid, euid, suid)
+
+设置当前进程的实际用户ID、有效用户ID和设置用户ID。
+
+支持：Unix。
+
+### os.setreuid(ruid, euid)
+
+设置当前进程的实际用户ID和有效用户ID。
+
+支持：Unix。
+
+### os.getsid(pid)
+
+调用系统的`getsid()`。语法参见`man`命令。
+
+支持：Unix。
+
+### os.setsid()
+
+调用系统的`setsid()`。语法参见`man`命令。
+
+支持：Unix。
+
+### os.setuid(uid)
+
+设置当前进程的用户ID。
+
+支持：Unix。
+
+### os.strerror(code)
+
+返回错误代码为`code`的错误信息。当提供未知错误代码时，平台的`strerror()`返回`NULL`，抛出`ValueError`异常。
+
+支持：Unix，Windows。
+
+### os.supports_bytes_environ
+
+如果原生系统环境为`bytes`类型则返回`True`。（如在Windows上为`False`）
+
+### os.umask(mask)
+
+设置当前umask码，并返回原来的umask码。
+
+支持：Unix，Windows。
+
+### os.uname()
+
+返回操作系统的标识信息。返回值有五个属性：
+
+* `sysname` - 操作系统名；
+* `nodename` - 网络节点名；
+* `release` - 系统发布版本号；
+* `version` - 操作系统版本；
+* `machine` - 硬件标识；
+
+为了保证向后兼容性，返回值是一个可迭代的、行为类似元组的、元素按顺序分别是`sysname`, `nodename`, `release`, `version`, `machine`的对象。
+
+一些系统会截断`nodename`，返回8个字符或首个词组。推荐使用`socket.gethostname()`或`socket.gethostbyaddr(socket.gethostname())`获得主机名。
+
+支持：多数Unix。
+
+### os.unsetenv(key)
+
+释放（删除）名为*key*的环境变量，这会影响到使用`os.system()`, `os.popen()`, `fork()`, `execv()`发起的子进程。
+
+当系统支持`unsetenv()`时，删除`os.environ`中的项会自动调用`unsetenv()`以删除相应的环境变量。但是，直接调用`unsetenv()`删除环境变量不会更新`os.environ`。所以，更推荐删除`os.environ`中的项。
+
+支持：多数Unix，Windows。
+
