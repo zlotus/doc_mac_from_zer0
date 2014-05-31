@@ -15,8 +15,6 @@ doc_mac_from_zer0
 
 [来自廖雪峰的Python中文教程](http://www.liaoxuefeng.com/wiki/001374738125095c955c1e6d8bb493182103fac9270762a000)
 
-[Python Testing - Python Test Frameworks and Strategies](http://pythontesting.net/start-here/)
-
 ## 添加了git速查
 
 ### 关于git的资源：
