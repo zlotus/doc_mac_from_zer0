@@ -336,3 +336,148 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 支持：多数Unix，Windows。
 
+## 创建文件对象
+
+此函数会创建新的文件对象（见`os.open()`，用以打开文件描述符）。
+
+### os.fdopen(fd, *args, **kwargs)
+
+返回一个与文件描述符*fd*关联的打开的文件对象。这是内建函数`open()`的别名，他们接受相同的参数，唯一的区别是`fdopen()`的第一个参数必须是整数。
+
+## 文件描述符操作
+
+以下的函数通过文件描述符操作I/O流。
+
+文件描述符，是一个较小的整数，关联着当前进程中打开的文件。标准输入（stdin）的文件描述符通常为0，标准输出（stdout）为1，标准错误（stderr）为2，进程接下来打开的文件将获得3、4、5等文件描述符。“文件描述符”这个名称可能会误导用户，因为在Unix中，sockets和pipes也是通过文件描述符引用的。
+
+`io.IOBase.fileno()`方法可以用来在需要的时候获取文件描述符。值得注意的是，如果绕过文件对象的方法，直接使用文件描述符，可能会忽略掉内部缓冲数据。
+
+### os.close(fd)
+
+关闭文件描述符*fd*。
+
+支持：Unix，Windows。
+
+注意：此函数用于服务底层I/O，用来关闭诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要关闭类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象时，请使用文件对象自己的`close()`方法。
+
+### os.closerange(fd_low, fd_high)
+
+关闭介于*fd_low*（包括）与*fd_high*（不包括）之间的所有文件描述符，并忽略异常，相当于（当然，比下面的代码快的多）：
+
+```
+for fd in range(fd_low, fd_high):
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+```
+
+支持：Unix，Windows。
+
+### os.device_encoding(fd)
+
+如果*fd*关联的设备连接到一个终端，则返回一个描述设备编码的字符串，否则返回`None`。
+
+### os.dup(fd)
+
+返回文件描述符*fd*的副本，新的文件描述符是不可继承的。
+
+在Windows上，如果复制标准流（stdin:0, stdout:1, stderr:2），新的文件描述符是可继承的。
+
+支持：Unix，Windows。
+
+### os.dup2(fd, fd2, inheritable=True)
+
+将文件描述符*fd*复制到*fd2*，并会根据需要关闭后者。*fd2*默认是可继承的，除非将`inheritable`置为`False`。
+
+支持：Unix，Windows。
+
+### os.fchmod(fd, mode)
+
+将给定文件*fd*的模式设置为*mode*。可用的*mode*参见`os.chmod()`的说明。对于Python3.3，相当于`os.chmod(fd, mode)`。
+
+支持：Unix。
+
+### os.fchown(fd, uid, gid)
+
+将文件*fd*的属主码置为*uid*，属组码置为*gid*。若不需要改变文件某个id属性，置为-1即可。参见`os.chown()`。对于Python3.3，相当于`os.chown(fd, uid, gid)`。
+
+支持：Unix。
+
+### os.fdatasync(fd)
+
+强制将与文件描述符*fd*关联的文件写入磁盘，但并不强制更新文件的元数据。
+
+支持：Unix。
+
+注意：MacOS不支持此函数。
+
+### os.fpathconf(fd, name)
+
+返回与被打开文件相关的的系统配置信息。用*name*参数指定取回的配置值，参数应为系统定义值，可能是字符串形式，这些系统定义值可以在某些标准（POSIX.1, Unix 95, Unix 98等）里找到。部分平台也支持额外的这类配置值。这些操作系统相关的配置值在`pathconf_names`目录中给出。如果有配置值并不在目录的映射中，则可以给传给*name*一个整型。
+
+如果*name*是字符串，且未定义在系统中，则会抛出`ValueError`；如果*name*不被操作系统支持，即使定义在`pathconf_names`中，也会抛出`OSError`，并附带一个`errno.EINVAL`的错误代码。
+
+对于Python3.3，相当于`os.pathconf(fd, name)`。
+
+支持：Unix。
+
+### os.fstat(fd)
+
+返回文件描述符*fd*的状态，类似`os.stat()`。对于Python3.3，相当于`os.stat(fd)`。
+
+支持：Unix，Windows。
+
+### os.fstatvfs(fd)
+
+返回包含与文件描述符*fd*相关联的文件的文件系统信息，类似`os.statvfs()`。对于Python3.3，相当于`os.statvfs(fd)`。
+
+支持：Unix。
+
+### os.fsync(fd)
+
+强制将与文件描述符*fd*关联的文件写入磁盘。在Unix上，会调用系统的`fsync()`，在Windows上则是`_commit()`。
+
+如果你操作的是一个有数据在缓冲区的文件对象*f*，首先应使用`f.flush()`，而后再使用`os.fsync(f.fileno())`，这样可以保证与文件对象*f*关联的缓冲区数据都被写入磁盘。
+
+支持：Unix，Windows。
+
+### os.ftruncate(fd, length)
+
+截断文件描述符*fd*关联的文件，使其不超过*length*个字节。对于Python3.3，相当于`os.truncate(fd, length`。
+
+支持：Unix。
+
+### os.isatty(fd)
+
+如果文件描述符*fd*关联的文件在类tty设备中打开，返回`True`，否则返回`False`。
+
+### os.lockf(fd, cmd, len)
+
+在一个打开的文件描述符*fd*上添加、测试或删除一个POSIX锁。*cmd*使用`F_LOCK`, `F_TLOCK`, `F_ULOCK`, `F_TEST`中的一个指定操作类型，*len*指定锁定的部位。
+
+支持：Unix。
+
+### os.F_LOCK
+### os.F_TLOCK
+### os.F_ULOCK
+### os.F_TEST
+
+指定`lockf()`的动作。
+
+### os.lseek(fd, pos, how)
+
+将文件描述符*fd*的游标移动至*pos*，移动的动作设置：`SEEK_SET`或0，表示相对于文件开头移动；`SEEK_CUR`或1，表示相对于当前游标的位置移动；`SEEK_END`或2，表示相对于文件结尾移动。动作结束后以字节形式返回当前游标相对于文件开头的位置。
+
+支持：Unix，Windows。
+
+### os.SEEK_SET
+### os.SEEK_CUR
+### os.SEEK_END
+
+函数`lseek()`的参数，其值分别为0, 1, 2。
+
+支持：Unix，Windows。
+
+某些操作系统还支持额外的类似`os.SEEK_HOLE`和`os.SEEK_DATA`的操作。
+
