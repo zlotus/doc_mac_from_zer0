@@ -71,9 +71,9 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 `environb`只有在`supports_bytes_environ`为真的时候可用。
 
-### os.chdir(path)
-### os.fchdir(fd)
-### os.getcwd()
+#### os.chdir(path)
+#### os.fchdir(fd)
+#### os.getcwd()
 
 这三个函数在“文件和路径”中详细描述。
 
@@ -176,9 +176,9 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 支持：Unix。
 
-### os.PRIO_PROCESS
-### os.PRIO_PGRP
-### os.PRIO_USER
+#### os.PRIO_PROCESS
+#### os.PRIO_PGRP
+#### os.PRIO_USER
 
 为`getpriority()`和`setpriority()`提供参数。
 
@@ -358,7 +358,7 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 支持：Unix，Windows。
 
-注意：此函数用于服务底层I/O，用来关闭诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要关闭类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象时，请使用文件对象自己的`close()`方法。
+注意：此函数用于支持底层I/O，通常用来关闭诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要关闭类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象时，请使用文件对象自己的`close()`方法。
 
 ### os.closerange(fd_low, fd_high)
 
@@ -458,10 +458,10 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix。
 
-### os.F_LOCK
-### os.F_TLOCK
-### os.F_ULOCK
-### os.F_TEST
+#### os.F_LOCK
+#### os.F_TLOCK
+#### os.F_ULOCK
+#### os.F_TEST
 
 指定`lockf()`的动作。
 
@@ -471,13 +471,69 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix，Windows。
 
-### os.SEEK_SET
-### os.SEEK_CUR
-### os.SEEK_END
+#### os.SEEK_SET
+#### os.SEEK_CUR
+#### os.SEEK_END
 
 函数`lseek()`的参数，其值分别为0, 1, 2。
 
 支持：Unix，Windows。
 
 某些操作系统还支持额外的类似`os.SEEK_HOLE`和`os.SEEK_DATA`的操作。
+
+### os.open(file, flags, mode=0o777, *, dir_fd=None)
+
+以*mode*方式打开文件*file*，并根据*flags*设置标识。计算*mode*时，会先使用当前掩码遮罩输出。并返回新打开文件的文件描述符。新的文件描述符是不可继承的。
+
+关于*flags*与*mode*的描述，参见C运行时文档。`os`模块中定义了标识常量（如`O_RDONLY`, `O_WRONLY`等）。特别的，在Windows上，如果需要以二进制方式打开文件，应使用`O_BINARY`。
+
+通过设置*dir_fd*可以使此函数支持“相对路径文件描述符”。
+
+支持：Unix，Windows。
+
+注意：此函数用于支持底层I/O，正常情况下推荐使用返回值为文件对象的内建函数`open()`，文件对象拥有`read()`, `write()`等更方便的方法。如果需要用文件对象来封装得到的文件描述符，可以使用`os.fdopen()`函数。
+
+以下常量为`os.open()`的*flags*参数选项，可以通过按位并或`|`操作符组合使用多个选项。其中某些并不在所有平台上支持。选项的使用详情参见`open(2)`的`man`文档（Unix），或MSDN（Windows）。
+
+#### os.O_RDONLY
+#### os.O_WRONLY
+#### os.O_RDWR
+#### os.O_APPEND
+#### os.O_CREAT
+#### os.O_EXCL
+#### os.O_TRUNC
+
+以上是Unix和Windows支持的。
+
+#### os.O_DSYNC
+#### os.O_RSYNC
+#### os.O_SYNC
+#### os.O_NDELAY
+#### os.O_NONBLOCK
+#### os.O_NOCTTY
+#### os.O_SHLOCK
+#### os.O_EXLOCK
+#### os.O_CLOEXEC
+
+以上是仅Unix支持的。
+
+#### os.O_BINARY
+#### os.O_NOINHERIT
+#### os.O_SHORT_LIVED
+#### os.O_TEMPORARY
+#### os.O_RANDOM
+#### os.O_SEQUENTIAL
+#### os.O_TEXT
+
+以上是仅Windows支持的。
+
+#### os.O_ASYNC
+#### os.O_DIRECT
+#### os.O_DIRECTORY
+#### os.O_NOFOLLOW
+#### os.O_NOATIME
+#### os.O_PATH
+#### os.O_TMPFILE
+
+以上是GNU附加的，如果未在C语言库中被定义，则不支持。
 
