@@ -537,3 +537,79 @@ for fd in range(fd_low, fd_high):
 
 以上是GNU附加的，如果未在C语言库中被定义，则不支持。
 
+### os.openpty()
+
+打开新的伪终端对，并返回一对文件描述符`(master, slave)`，分别代表pty和tty。这些文件描述符是不可继承的。如果需要可移植性强（轻量级）的实现，可以使用`pty`模块。
+
+支持：多数Unix。
+
+### os.pipe()
+
+新建管道，返回一对文件描述符`(r, w)`，分别用于读和写。这些文件描述符是不可继承的。
+
+支持：Unix，Windows。
+
+### os.pipe2(flags)
+
+以原子方式设置为新建的管道设置*flags*。多个*flags*选项（`O_NONBLOCK`, `O_CLOEXEC`）间可以使用并操作组合。返回一对文件描述符`(r, w)`，分别用于读和写。这些文件描述符是不可继承的。
+
+### os.posix_fallocate(fd, offset, len)
+
+用于确保磁盘上有足够的空间，以容纳*fd*指定的文件中从*offset*开始长度为*len*字节的内容。
+
+支持：Unix。
+
+### os.posix_fadvise(fd, offset, len, advice)
+
+通过指定的模式*advice*访问文件*fd*中从*offset*开始后*len*个字节的数据，模式*advice*是`POSIX_FADV_NORMAL`, `POSIX_FADV_SEQUENTIAL`, `POSIX_FADV_RANDOM`, `POSIX_FADV_NOREUSE`, `POSIX_FADV_WILLNEED`, `POSIX_FADV_DONTNEED`中的一种。这样可以允许内核做相应的优化。
+
+支持：Unix。
+
+#### os.POSIX_FADV_NORMAL
+#### os.POSIX_FADV_SEQUENTIAL
+#### os.POSIX_FADV_RANDOM
+#### os.POSIX_FADV_NOREUSE
+#### os.POSIX_FADV_WILLNEED
+#### os.POSIX_FADV_DONTNEED
+
+`posix_fadvise()`中的*advice*参数所能够使用的选项，用以指定可能的文件访问模式。
+
+### os.pread(fd, buffersize, offset)
+
+从文件描述符*fd*的*offset*处开始，读取*buffersize*个字节，此函数不会改变该文件游标的偏移量。
+
+支持：Unix。
+
+### os.pwrite(fd, string, offset)
+
+向文件描述符*fd*的*offset*处写入*string*，此函数不会改变该文件描述符游标的偏移量。
+
+### os.read(fd, n)
+
+从文件描述符*fd*中读取最多*n*字节的内容，以字节串形式返回读取的内容。如果遇到*fd*指定的文件末端，则返回空的`bytes`对象。
+
+支持：Unix，Windows。
+
+注意：此函数用于支持底层I/O，通常用来关闭诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要关闭类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象或`sys.stdin`时，请使用文件对象自己的`close()`方法。
+
+### os.sendfile(out, in, offset, nbytes)
+### os.sendfile(out, in, offset, nbytes, headers=None, trailers=None, flags=0)
+
+从文件描述符*in*中读取*nbytes*字节，写入文件描述符*out*的*offset*处，返回成功写入的字节数。当遇到EOF时，返回0。
+
+第一个函数适用于定义了`sendfile()`命令或函数的所以平台。
+
+在Linux上，如果*offset*被置为`None`，则从*in*的当前游标读取内容后，*in*的游标位置会被更新。
+
+第二个函数常用于Mac OS X和FreeBSD，其中的*headers*和*trailers*是任意序列，分别在*in*的数据写入前和写入后被更新。此函数与上一个函数返回值相同。
+
+在Mac OS X和FreeBSD上，将*nbytes*置为0，表示持续发送*in*中的内容，直到*in*读取结束。
+
+所有平台都支持将socket作为文件描述符*out*的参数，一些平台也支持诸如普通文件、管道等其他类型。
+
+#### os.SF_NODISKIO
+#### os.SF_MNOWAIT
+#### os.SF_SYNC
+
+`sendfile()`函数的*flag*选项，如果平台支持的话。
+
