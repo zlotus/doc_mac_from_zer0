@@ -590,7 +590,7 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix，Windows。
 
-注意：此函数用于支持底层I/O，通常用来关闭诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要关闭类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象或`sys.stdin`时，请使用文件对象自己的`close()`方法。
+注意：此函数用于支持底层I/O，通常用来读取诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要读取类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象或`sys.stdin`时，请使用文件对象自己的`read()`或`readline()`方法。
 
 ### os.sendfile(out, in, offset, nbytes)
 ### os.sendfile(out, in, offset, nbytes, headers=None, trailers=None, flags=0)
@@ -612,4 +612,42 @@ for fd in range(fd_low, fd_high):
 #### os.SF_SYNC
 
 `sendfile()`函数的*flag*选项，如果平台支持的话。
+
+### os.readv(fd, buffers)
+
+将件描述符*fd*的内容读入至一系列可变类字节对象（bytes-like object）*buffers*中。`readv()`将数据装入一个buffer直至装满，而后转向*buffers*中的下一个buffer继续写入数据。`readv()`返回读取的总字节数（可能会比*buffers*中所有对象能够容纳的总字节数小）。
+
+支持：Unix。
+
+### os.tcgetpgrp(fd)
+
+返回*fd*（一个由`os.open()`返回的文件描述符）上打开的终端相关联的进程组ID。
+
+支持：Unix。
+
+### os.tcsetpgrp(fd, pg)
+
+将*fd*（一个由`os.open()`返回的文件描述符）上打开的终端相关联的进程组ID置为*pg*。
+
+支持：Unix。
+
+### os.ttyname(fd)
+
+返回与文件描述符*fd*相关联的终端设备名称。如果*fd*没有与终端相关联，则抛出异常。
+
+支持：Unix。
+
+### os.write(fd, str)
+
+将*str*中的字节串写入文件描述符*fd*。返回实际写入的字节数。
+
+支持：Unix，Windows。
+
+注意：此函数用于支持底层I/O，通常用来写入诸如`os.open()`或`pipe()`等函数返回的文件描述符。如果要写入类似内建函数`open()`或`os.popen()`和`os.fdopen()`等函数打开的文件对象或`sys.stdin`时，请使用文件对象自己的`write()`方法。
+
+### os.writev(fd, buffers)
+
+将*buffers*中的内容写入文件描述符*fd*。*buffers*必须是类字节对象的序列，`writev()`将每个*buffers*中的对象内容都写入*fd*，并返回写入的总字节数。
+
+支持：Unix。
 
