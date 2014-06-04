@@ -651,3 +651,109 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix。
 
+### 查询终端大小
+
+#### os.get_terminal_size(fd=STDOUT_FILENO)
+
+以类似`(columns, lines)`的形式返回终端窗口大小，返回值为`os.terminal_size`类型。
+
+可选参数*fd*指定需要使用的文件描述符，默认为`STDOUT_FILENO`或标准输出。
+
+通常使用`shutil.get_terminal_size()`这个高级函数来获取终端窗口大小，`os.get_terminal_size`是一个底层的实现。
+
+支持：Unix，Windows。
+
+#### class os.terminal_size
+
+tuple的子类，以`(columns, lines)`的形式存放终端大小。
+
+* columns为终端窗口的宽度，可以容纳多少字节；
+* lines为终端窗口的高度，可以容纳多少字节；
+
+### 文件描述符的继承
+
+文件描述符都有“可继承”标识，用以表明该描述符是否可以被子进程继承。在Python3.4中，由Python创建的文件描述符默认是不可继承的。
+
+在Unix上，子进程在处理新程序时会关闭不可继承的文件描述符，其余的文件描述符是都是可继承的。
+
+在Windows上，子进程会关闭不可继承的句柄和除了标准流（分别代表stdin, stdout, stderr的文件描述符0, 1, 2总是可继承的）以外的文件描述符。如果使用`spawn*`系列函数，所有可继承句柄和可继承文件描述符都可以被继承。如果使用`subprocess`模块，除了标准流以外的文件描述符都会被关闭，而只有当`close_fds`置为`False`时，可继承句柄才会被继承。
+
+#### os.get_inheritable(fd)
+
+返回指定文件描述符*fd*的可继承标识（布尔值）。
+
+#### os.set_inheritable(fd, inheritable)
+
+将指定文件描述符*fd*的可继承标识置为*inheritable*。
+
+#### os.get_handle_inheritable(handle)
+
+返回指定句柄*handle*的可继承标识（布尔值）。
+
+支持：Windows。
+
+#### os.set_handle_inheritable(handle, inheritable)
+
+将指定句柄*handle*的可继承标识置为*inheritable*。
+
+支持：Windows。
+
+## 文件与目录
+
+对于一些Unix平台，模块中的很多函数都有以下一种或几种特性：
+
+* 指定文件描述符：对于很多函数，*path*参数不仅可以接受一个字符串作为路径名，而且可以接受一个文件描述符。若是文件描述符，则函数会继续操作描述符所关联的文件。（对于POSIX系统，Python会调用该函数的`f...`版本以支持对文件描述符的操作。）
+    
+    可以通过`os.supports_fd`标识来判断当前平台是否支持将文件描述符当做*path*参数。如果不支持时强制使用文件描述符，则会抛出`NotImplementedError`异常。
+    
+    如果函数有*dir_fd*和*follow_symlinks*参数，且当*path*参数为文件描述符时，指定前面的两个参数是错误的。
+    
+* [目录描述符的相对路径](id:paths_relative_to_directory_descriptors)：若*dir_fd*不为`None`，则应指定为某个目录关联的文件描述符，其他的参数都应指定为该目录的相对路径。若提供绝对路径，则*dir_fd*会被忽略。（对于POSIX系统，Python会调用该函数的`...at`和`f...at`版本以支持对目录描述符的操作。）
+    
+    可以通过`os.supports_dir_fd`标识来判断当前平台是否支持将文件描述符当做*dir_fd*参数。如果不支持时强制使用目录描述符，则会抛出`NotImplementedError`异常。
+    
+* [不跟踪符号链接](id:not_following_symlinks)（软链接）：若*follow_symlinks*为`False`，且路径最后一个元素所指的是一个符号链接，函数会直接操作该符号链接，而不是符号链接所指的对象。（对于POSIX系统，Python会调用该函数的`l...`版本以支持对符号链接的操作。）
+    
+    可以通过`os.supports_follow_symlinks`标识来判断当前平台是否支持符号链接操作。如果不支持时强行操作符号链接，则会抛出`NotImplementedError`异常。
+
+### os.access(path, mode, *, dir_fd=None, effective_ids=False, follow_symlinks=True)
+
+使用实际uid/gid测试是否可以访问*path*。应该了解的是，大多数操作使用有效uid/gid，所以在使用suid/sgid的环境中同样可以用于测试调用者是否对*path*有足够的访问权限。将*mode*置为`F_OK`用以测试*path*是否存在，也可以通过并操作结合`R_OK`, `W_OK`, `X_OK`选项测试访问权限。如果允许访问则返回`True`，否则返回`False`。更多细节参见`access(2)`的`man`手册。
+
+此函数支持设置[目录描述符的相对路径](#paths_relative_to_directory_descriptors)和[不跟踪符号链接](#not_following_symlinks)。
+
+如果`effective_ids`置为`True`，`access()`将使用有效uid/gid代替实际uid/gid进行访问权限测试。可以通过`os.supports_effective_ids`标识来判断当前平台是否支持有效ID。如果不支持时强行设置，则会抛出`NotImplementedError`异常。
+
+支持：Unix，Windows。
+
+注意：在使用`open()`或其他操作前调用`access()`测试用户是否具有访问权限，会造成安全漏洞。因为用户可能会利用**检查权限**与**打开文件**的间隙操作文件。推荐使用EAFP(Easier to ask for forgiveness than permission)技术解决这个问题：
+
+可能被利用的代码：
+
+```
+if os.access("myfile", os.R_OK):
+    with open("myfile") as fp:
+        return fp.read()
+return "some default data"
+```
+
+改写为EAFP模式：
+
+```
+try:
+    fp = open("myfile")
+except PermissionError:
+    return "some default data"
+else:
+    with fp:
+        return fp.read()
+```
+
+注意：即使通过了`access()`测试，I/O操作仍可能失败。这种情况更可能发生于网际间的文件系统，因为这种系统可能具有比POSIX的权限位更复杂的访问控制机制。
+
+#### os.F_OK
+#### os.R_OK
+#### os.W_OK
+#### os.X_OK
+
+`access()`函数的*mode*选项，分别用于测试存在、可读、可写、可执行。
