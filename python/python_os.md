@@ -36,7 +36,7 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 下列函数和属性提供了当前进程及用户的信息与相应操作。
 
-### os.ctermid()¶
+### os.ctermid()
 
 返回控制进程的终端所关联的文件。
 
@@ -702,7 +702,7 @@ tuple的子类，以`(columns, lines)`的形式存放终端大小。
 
 对于一些Unix平台，模块中的很多函数都有以下一种或几种特性：
 
-* 指定文件描述符：对于很多函数，*path*参数不仅可以接受一个字符串作为路径名，而且可以接受一个文件描述符。若是文件描述符，则函数会继续操作描述符所关联的文件。（对于POSIX系统，Python会调用该函数的`f...`版本以支持对文件描述符的操作。）
+* [指定文件描述符](id:specifying_a_file_descriptor)：对于很多函数，*path*参数不仅可以接受一个字符串作为路径名，而且可以接受一个文件描述符。若是文件描述符，则函数会继续操作描述符所关联的文件。（对于POSIX系统，Python会调用该函数的`f...`版本以支持对文件描述符的操作。）
     
     可以通过`os.supports_fd`标识来判断当前平台是否支持将文件描述符当做*path*参数。如果不支持时强制使用文件描述符，则会抛出`NotImplementedError`异常。
     
@@ -757,3 +757,144 @@ else:
 #### os.X_OK
 
 `access()`函数的*mode*选项，分别用于测试存在、可读、可写、可执行。
+
+### os.chdir(path)
+
+改变当前工作目录。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)。描述符必须指向一个打开的目录，而不是文件。
+
+支持：Unix，Windows。
+
+### os.chflags(path, flags, *, follow_symlinks=True)
+
+将*path*的标识置为*flags*。*flags*可以是下列选项（定义在`stat`模块中）的任意组合（按位或）：
+
+* stat.UF_NODUMP
+* stat.UF_IMMUTABLE
+* stat.UF_APPEND
+* stat.UF_OPAQUE
+* stat.UF_NOUNLINK
+* stat.UF_COMPRESSED
+* stat.UF_HIDDEN
+* stat.SF_ARCHIVED
+* stat.SF_IMMUTABLE
+* stat.SF_APPEND
+* stat.SF_NOUNLINK
+* stat.SF_SNAPSHOT
+
+此函数支持[不跟踪符号链接](#not_following_symlinks)。
+
+### [os.chmod(path, mode, *, dir_fd=None, follow_symlinks=True)](id:os.chmod)
+
+将*path*的模式置为*mode*。*mode*可以说下列选项（定义在`stat`模块中）的任意组合（按位或）：
+
+* stat.S_ISUID
+* stat.S_ISGID
+* stat.S_ENFMT
+* stat.S_ISVTX
+* stat.S_IREAD
+* stat.S_IWRITE
+* stat.S_IEXEC
+* stat.S_IRWXU
+* stat.S_IRUSR
+* stat.S_IWUSR
+* stat.S_IXUSR
+* stat.S_IRWXG
+* stat.S_IRGRP
+* stat.S_IWGRP
+* stat.S_IXGRP
+* stat.S_IRWXO
+* stat.S_IROTH
+* stat.S_IWOTH
+* stat.S_IXOTH
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。
+
+注意：尽管Windows也有支持`chmod()`函数，但只允许用户修改文件是否只读的属性（通过`stat.S_IWRITE`、`stat.S_IREAD`选项或选项的对应数值）。其他权限位会被忽略。
+
+### os.chown(path, uid, gid, *, dir_fd=None, follow_symlinks=True)
+
+将*path*的属主、属组ID分别置为*uid*和*gid*。如果其中的某个ID不需要修改，只需将该ID置为-1.
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。
+
+参考高级函数`shutil.chown()`，除了接受ID，还接受属主/属组名称作为参数。
+
+### os.chroot(path)
+
+将当前进程的根目录置为*path*。
+
+支持：Unix。
+
+### os.fchdir(fd)
+
+将当前工作目录置为文件描述符*fd*所指的目录。描述符必须指向一个打开的目录，而不是文件。在Python3.3中，相当于`os.chdir(fd)`。
+
+支持：Unix。
+
+### os.getcwd()
+
+以字符串形式返回当前工作目录的路径。
+
+支持：Unix，Windows。
+
+### os.getcwdb()
+
+以字节串形式返回当前工作目录的路径。
+
+支持：Unix，Windows。
+
+### os.lchflags(path, flags)
+
+将*path*的标识置为*flags*，用法类似`chflags()`，只是不跟踪符号链接。在Python3.3中，相当于`os.chflags(path, flags, follow_symlinks=False)`。
+
+支持：Unix。
+
+### os.lchmod(path, mode)
+
+将*path*的模式置为*mode*。如果路径所指为符号链接，则直接作用于符号链接，而不是其指向的目标。*mode*选项参见[`chmod()`](#os.chmod)。在Python3.3上，相当于`os.chmod(path, mode, follow_symlinks=False)`。
+
+支持：Unix。
+
+### os.lchown(path, uid, gid)
+
+将*path*的属主、属组ID分别置为*uid*和*gid*。此函数不会跟踪符号链接。在Python3.3上，相当于`os.chown(path, uid, gid, follow_symlinks=False)`。
+
+支持：Unix。
+
+### os.link(src, dst, *, src_dir_fd=None, dst_dir_fd=None, follow_symlinks=True)
+
+创建一个指向*src*，名为*dst*的硬链接。
+
+此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)和[不跟踪符号链接](#not_following_symlinks)。
+
+支持：Unix，Windows。
+
+### os.listdir(path='.')
+
+以列表形式返回*path*中所有对象的名字。名称没有排序，且不包含特殊路径`.`和`..`。
+
+*path*可以是`str`或`bytes`。如果参数为*bytes*，则返回值列表中的元素也为`bytes`类型；如果参数为*str*，则返回值列表中的元素也为`str`类型。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)，且文件描述符必须指向目录。
+
+### os.lstat(path, *, dir_fd=None)
+
+与系统的`lstat()`起同样的作用。用法类似[`stat()`](#os.stat)，但是不跟踪符号链接。在不支持符号链接的平台上，此函数等同于`stat()`。在Python3.3上，相当于`os.stat(path, dir_fd=dir_fd, follow_symlinks=False)`。
+
+此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+### os.mkdir(path, mode=0o777, *, dir_fd=None)
+
+以*mode*模式创建*path*路径。
+
+在一些系统上，*mode*会被忽略。当支持*mode*时，会先使用当前掩码遮罩输出。如果路径以及存在，则抛出`OSError`。
+
+此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+此函数也支持创建临时目录，见`tempfile`模块的`tempfile.mkdtemp()`函数。
+
+支持：Unix，Windows。
+
+### [os.stat(path, *, dir_fd=None, follow_symlinks=True)](id:os.stat)
