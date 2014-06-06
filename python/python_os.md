@@ -176,9 +176,9 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 支持：Unix。
 
-#### os.PRIO_PROCESS
-#### os.PRIO_PGRP
-#### os.PRIO_USER
+* os.PRIO_PROCESS
+* os.PRIO_PGRP
+* os.PRIO_USER
 
 为`getpriority()`和`setpriority()`提供参数。
 
@@ -458,10 +458,10 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix。
 
-#### os.F_LOCK
-#### os.F_TLOCK
-#### os.F_ULOCK
-#### os.F_TEST
+* os.F_LOCK
+* os.F_TLOCK
+* os.F_ULOCK
+* os.F_TEST
 
 指定`lockf()`的动作。
 
@@ -471,9 +471,9 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix，Windows。
 
-#### os.SEEK_SET
-#### os.SEEK_CUR
-#### os.SEEK_END
+* os.SEEK_SET
+* os.SEEK_CUR
+* os.SEEK_END
 
 函数`lseek()`的参数，其值分别为0, 1, 2。
 
@@ -495,45 +495,45 @@ for fd in range(fd_low, fd_high):
 
 以下常量为`os.open()`的*flags*参数选项，可以通过按位并或`|`操作符组合使用多个选项。其中某些并不在所有平台上支持。选项的使用详情参见`open(2)`的`man`文档（Unix），或MSDN（Windows）。
 
-#### os.O_RDONLY
-#### os.O_WRONLY
-#### os.O_RDWR
-#### os.O_APPEND
-#### os.O_CREAT
-#### os.O_EXCL
-#### os.O_TRUNC
+* os.O_RDONLY
+* os.O_WRONLY
+* os.O_RDWR
+* os.O_APPEND
+* os.O_CREAT
+* os.O_EXCL
+* os.O_TRUNC
 
 以上是Unix和Windows支持的。
 
-#### os.O_DSYNC
-#### os.O_RSYNC
-#### os.O_SYNC
-#### os.O_NDELAY
-#### os.O_NONBLOCK
-#### os.O_NOCTTY
-#### os.O_SHLOCK
-#### os.O_EXLOCK
-#### os.O_CLOEXEC
+* os.O_DSYNC
+* os.O_RSYNC
+* os.O_SYNC
+* os.O_NDELAY
+* os.O_NONBLOCK
+* os.O_NOCTTY
+* os.O_SHLOCK
+* os.O_EXLOCK
+* os.O_CLOEXEC
 
 以上是仅Unix支持的。
 
-#### os.O_BINARY
-#### os.O_NOINHERIT
-#### os.O_SHORT_LIVED
-#### os.O_TEMPORARY
-#### os.O_RANDOM
-#### os.O_SEQUENTIAL
-#### os.O_TEXT
+* os.O_BINARY
+* os.O_NOINHERIT
+* os.O_SHORT_LIVED
+* os.O_TEMPORARY
+* os.O_RANDOM
+* os.O_SEQUENTIAL
+* os.O_TEXT
 
 以上是仅Windows支持的。
 
-#### os.O_ASYNC
-#### os.O_DIRECT
-#### os.O_DIRECTORY
-#### os.O_NOFOLLOW
-#### os.O_NOATIME
-#### os.O_PATH
-#### os.O_TMPFILE
+* os.O_ASYNC
+* os.O_DIRECT
+* os.O_DIRECTORY
+* os.O_NOFOLLOW
+* os.O_NOATIME
+* os.O_PATH
+* os.O_TMPFILE
 
 以上是GNU附加的，如果未在C语言库中被定义，则不支持。
 
@@ -565,12 +565,12 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix。
 
-#### os.POSIX_FADV_NORMAL
-#### os.POSIX_FADV_SEQUENTIAL
-#### os.POSIX_FADV_RANDOM
-#### os.POSIX_FADV_NOREUSE
-#### os.POSIX_FADV_WILLNEED
-#### os.POSIX_FADV_DONTNEED
+* os.POSIX_FADV_NORMAL
+* os.POSIX_FADV_SEQUENTIAL
+* os.POSIX_FADV_RANDOM
+* os.POSIX_FADV_NOREUSE
+* os.POSIX_FADV_WILLNEED
+* os.POSIX_FADV_DONTNEED
 
 `posix_fadvise()`中的*advice*参数所能够使用的选项，用以指定可能的文件访问模式。
 
@@ -607,9 +607,9 @@ for fd in range(fd_low, fd_high):
 
 所有平台都支持将socket作为文件描述符*out*的参数，一些平台也支持诸如普通文件、管道等其他类型。
 
-#### os.SF_NODISKIO
-#### os.SF_MNOWAIT
-#### os.SF_SYNC
+* os.SF_NODISKIO
+* os.SF_MNOWAIT
+* os.SF_SYNC
 
 `sendfile()`函数的*flag*选项，如果平台支持的话。
 
@@ -751,10 +751,10 @@ else:
 
 注意：即使通过了`access()`测试，I/O操作仍可能失败。这种情况更可能发生于网际间的文件系统，因为这种系统可能具有比POSIX的权限位更复杂的访问控制机制。
 
-#### os.F_OK
-#### os.R_OK
-#### os.W_OK
-#### os.X_OK
+* os.F_OK
+* os.R_OK
+* os.W_OK
+* os.X_OK
 
 `access()`函数的*mode*选项，分别用于测试存在、可读、可写、可执行。
 
@@ -897,4 +897,64 @@ else:
 
 支持：Unix，Windows。
 
+### os.makedirs(name, mode=0o777, exist_ok=False)
+
+此函数会递归的创建路径。类似`mkdir()`，在创建叶节点目录的过程中会自动创建所有叶节点所需的上级目录。
+
+*mode*默认使用`0o777`（八进制）。在一些系统上，*mode*会被忽略。当支持*mode*时，会先使用当前掩码遮罩输出。
+
+当*exist_ok*置为`False`（默认）时，如果目标目录存在则会抛出`OSError`。当*exist_ok*置为`True`时，如果已存在目标目录的*mode*与指定*mode*不一致时，也会抛出`OSError`。如果目录创建失败，同样会抛出`OSError`。
+
+注意：如果目标目录的某级中出现`pardir`（如在Unix上为`..`），可能会产生与预期不相符的结果。
+
+函数可以正确支持UNC路径。
+
+### os.mkfifo(path, mode=0o666, *, dir_fd=None)
+
+使用模式*mode*创建一个名为*path*的FIFO（命名管道），使用当前掩码遮罩。
+
+函数同样支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使用[`os.unlink()`](#os.unlink)）前会一直存在。FIFO通常用来作“server”型进程与“client”型进程之间的数据交互：server进程打开FIFO读取数据，client打开FIFO写入数据。注意到`mkfifo()`并不负责打开FIFO，它只是创建而已。
+
+支持：Unix。
+
+### os.mknod(filename, mode=0o600, device=0, *, dir_fd=None)
+
+创建一个名为*filename*的文件系统节点（如文件、设备或命名管道）。*mode*参数指定权限位和节点类型（`stat.S_IFREG`, `stat.S_IFCHR`, `stat.S_IFBLK`, `stat.S_IFIFO`的按位或组合，这些常量定义在`stat`模块中）。选择`stat.S_IFCHR`和`stat.S_IFBLK`时，使用参数*device*指定新建的设备文件（可能使用[`os.makedev()`](#os.makedev)函数）；否则会忽略该参数。
+
+函数同样支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+### os.major(device)
+
+从原始的设备号中抽取主要设备号（device major number，通常是`stat`模块中的`st_dev`和`st_rdev`）。
+
+### os.minor(device)
+
+从原始的设备号中抽取具体设备号（device minor number，通常是`stat`模块中的`st_dev`和`st_rdev`）。
+
+### [os.makedev(major, minor)](id:os.makedev)
+
+使用*major*和*minor*构成原始设备序号。
+
+### os.pathconf(path, name)
+
+返回与指定文件相关的系统配置信息。*name*指定返回的配置键，参数应为系统定义值，可能是字符串形式，这些系统定义值可以在某些标准（POSIX.1, Unix 95, Unix 98等）里找到。部分平台也支持额外的这类配置值。这些操作系统相关的配置值在`pathconf_names`目录中给出。如果有配置值并不在目录的映射中，则可以给传给*name*一个整型。
+
+如果*name*是字符串，且未定义在系统中，则会抛出`ValueError`；如果*name*不被操作系统支持，即使定义在`pathconf_names`中，也会抛出`OSError`，并附带一个`errno.EINVAL`的错误代码。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+
+支持：Unix。
+
+### os.readlink(path, *, dir_fd=None)
+
+以字符串形式返回符号链接指向的路径，返回结果可能是绝对路径或相对路径。如果是相对路径，则可以使用`os.path.join(os.path.dirname(path), result)`将其转为绝对路径。
+
+如果*path*以字符串形式给出，则返回值也是字符串，如果中途出错则会抛出`UnicodeDecodeError`。如果*path*以字节形式给出，则返回值也是字节形式。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+
 ### [os.stat(path, *, dir_fd=None, follow_symlinks=True)](id:os.stat)
+
+### [os.unlink(path, *, dir_fd=None)](id:os.unlink)
