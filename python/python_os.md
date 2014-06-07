@@ -955,6 +955,70 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
 
+### os.remove(path, *, dir_fd=None)
+
+删除*path*。如果*path*是路径则抛出`OSError`。要删除目录请使用`rmdir()`。
+
+此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+在Windows上，删除正在使用的文件会抛出异常；在Unix上，目录入口会被删除，但分配给文件的存储空间是无效的，直到该文件不再使用。
+
+此函数与[`unlink()`](#os.unlink))相同。
+
+支持：Unix，Windows。
+
+### os.removedirs(name)
+
+递归的删除目录。类似[`rmdir()`](id:os.rmdir)，只是在叶目录删除成功时，函数会继续尝试删除*path*中出现的父路径直到抛出异常（会被忽略，因为这通常表示父路径不为空）。例如，` os.removedirs('foo/bar/baz')`会先尝试删除`'foo/bar/baz'`，接下来是`'foo/bar'`，最后是`'foo'`（如果这几个父目录为空的情况下才可以删除）。在不能成功删除叶节点时抛出`OSError`异常。
+
+### [os.rename(src, dst, *, src_dir_fd=None, dst_dir_fd=None)](id:os.rename)
+
+将文件或目录名*src*该为*dst*。如果*dst*是目录，则会抛出异常`OSError`。在Unix上，如果*dst*是一个存在的文件，在权限足够的情况下文件名会被静默的替换。在一些Unix系统上，如果*src*与*dst*在不同的文件系统上时，可能会导致操作失败。如果操作成功，重命名操作将会是一个原子操作（POSIX系统的必须条件）。在Windows上，如果*dst*已存在，即使是文件，也会抛出`OSError`。
+
+此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+如果需要跨系统重新目的路径，使用[`replace()`](#os.replace)。若在一个文件系统内，可以使用此函数来移动文件。
+
+支持：Unix，Windows。
+
+### [os.renames(old, new)](id:os.renames)
+
+此函数用于递归的重命名。类似[`rename()`](#os.rename)，只是在新建目的路径的操作中会尝试创建所有需要的中间级目录。在重命名后，目录关联到的路径最右端的节点将使用[`removedirs()`](#os.removedirs)删除。
+
+注意：如果没有删除叶节点的权限，会导致操作失败。
+
+### [os.replace(src, dst, *, src_dir_fd=None, dst_dir_fd=None)](id:os.replace)
+
+将*src*重命名为*dst*。如果*dst*是目录，则抛出`OSError`。如果*dst*是一个存在的文件，在权限足够的情况下文件名会被静默的替换。如果*src*与*dst*在不同的文件系统上时，可能会导致操作失败。如果操作成功，重命名操作将会是一个原子操作（POSIX系统的必须条件）。
+
+此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+支持：Unix，Windows。
+
+### [os.rmdir(path, *, dir_fd=None)](id:os.rmdir)
+
+删除目录*path*。只有在*path*为空时才可以成功，否则会抛出`OSError`。如果要删除整个目录树，可以使用`shutil.rmtree()`。
+
+此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+支持：Unix，Windows。
+
+### [os.stat(path, *, dir_fd=None, follow_symlinks=True)](id:os.stat)
+
+行为等同于在给定目录*path*上调用系统的`stat()`。*path*可以是字符串，也可以是文件描述符。（此函数默认跟踪符号链接，要获得符号链接的状态，可以`follow_symlinks=False`，也可以使用`lstat()`。）
+
+返回值为一个大致与系统`stat()`返回值对应的对象：
+
+* st_mode - 保护位；
+* inode - 索引节；
+* st_dev - 设备；
+* st_nlink - 硬链接数；
+* st_uid - 属主ID；
+* st_gid - 属组ID；
+* st_size - 文件总大小，按字节统计；
+* st_atime - 最近一次访问时间，按秒统计；
+
 ### [os.stat(path, *, dir_fd=None, follow_symlinks=True)](id:os.stat)
 
 ### [os.unlink(path, *, dir_fd=None)](id:os.unlink)
+
