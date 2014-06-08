@@ -1009,16 +1009,88 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 返回值为一个大致与系统`stat()`返回值对应的对象：
 
-* st_mode - 保护位；
-* inode - 索引节；
-* st_dev - 设备；
-* st_nlink - 硬链接数；
-* st_uid - 属主ID；
-* st_gid - 属组ID；
-* st_size - 文件总大小，按字节统计；
-* st_atime - 最近一次访问时间，按秒统计；
+* `st_mode` - 保护位；
+* `inode` - 索引节；
+* `st_dev` - 设备；
+* `st_nlink` - 硬链接数；
+* `st_uid` - 属主ID；
+* `st_gid` - 属组ID；
+* `st_size` - 文件总大小，以字节为单位；
+* `st_atime` - 最近一次访问时间，以秒为单位；
+* `st_mtime` - 最近一次内容修改，以秒为单位；
+* `st_ctime` - 平台相关属性；在Unix上，为最近一次文件元数据修改，在Windows上，为文件创建时间；以秒为单位；
+* `st_atime_ns` - 最近一次访问时间，以纳秒为单位；
+* `st_mtime_ns` - 最近一次内容修改，以纳秒为单位；
+* `st_ctime_ns` - 平台相关属性；在Unix上，为最近一次文件元数据修改，在Windows上，为文件创建时间；以纳秒为单位；
 
-### [os.stat(path, *, dir_fd=None, follow_symlinks=True)](id:os.stat)
+在某些Unix系统（如Linux）上，提供下列额外属性：
+
+* `st_blocks` - 文件总块数，以512字节为一块；
+* `st_blksize` - 高效文件系统I/O的文件系统块大小
+* `st_rdev` - 索引节点设备的类型；
+* `st_flags` - 文件的用户定义标识；
+
+在另一些Unix系统（如FreeBSD）上，提供下列额外属性：
+
+* `st_gen` - 文件生成号；
+* `st_birthtime` - 文件生成时间；
+
+在另一些Unix系统（如FreeBSD）上，提供下列额外属性：
+
+* `st_rsize`
+* `st_creator`
+* `st_type`
+
+注意：`st_atime`, `st_mtime`, `st_ctime`属性的时间精确度是跟操作系统、文件系统相关的。例如在Windows上的文件系统FAT和FAT32，`st_mtime`属性精确到2秒，而`st_atime`精确到1天，详情需要参考操作系统文档。类似的，尽管`st_atime_ns`, `st_mtime_ns`, `st_ctime_ns`的单位总是纳秒，但很多系统不一定支持到纳秒级的精确度。在那些支持纳秒级精确度的操作系统上，存放`st_atime`, `st_mtime`, `st_ctime `的浮点数存不下如此大的数字，于是也会有轻微的近似。如果需要用到很精确的时间戳，应该始终使用`st_atime_ns, st_mtime_ns`, `st_ctime_ns`。
+
+为了保证向后兼容性，[`stat()`](#os.stat)总是返回由至少10个元素组成的元组，这10个元素是`stat`结构体最重要（也是通用的，可移植的）的10个成员，按顺序分别为`st_mode`, `st_ino`, `st_dev`, `st_nlink`, `st_uid`, `st_gid`, `st_size`, `st_atime`, `st_mtime`, `st_ctime`。额外的成员可能继续追加在元组的尾部。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+
+`stat`标准模块定义了用于从`stat`结构体中解析出可读信息的函数及常量。（在Windows上，一些成员会被预设为虚值(dummy value)）。
+
+例如：
+
+```
+>>> import os
+>>> statinfo = os.stat('somefile.txt')
+>>> statinfo
+posix.stat_result(st_mode=33188, st_ino=7876932, st_dev=234881026,
+st_nlink=1, st_uid=501, st_gid=501, st_size=264, st_atime=1297230295,
+st_mtime=1297230027, st_ctime=1297230027)
+>>> statinfo.st_size
+264
+```
+
+支持：Unix，Windows。
+
+### [os.statvfs(path)](id:os.statvfs)
+
+行为等同于在给定的目录*path*上调用系统的`statvfs()`。返回值是一个用来描述文件系统的`statvfs`结构体。其成员为别为：`f_bsize`, `f_frsize`, `f_blocks`, `f_bfree`, `f_bavail`, `f_files`, `f_ffree`, `f_favail`, `f_flag`, `f_namemax`。
+
+`f_flag`属性位标识有两个模块级常量：如果设置`ST_RDONLY`，则文件系统挂载为只读；如果设置`ST_NOSUID`，setuid/setgid的语法会被禁用或不支持。
+
+额外的模块级常数用于基于GNU/glibc的系统，分别为：
+
+* `ST_NODEV` - 不允许访问设备类文件；
+* `ST_NOEXEC` - 不允许执行程序；
+* `ST_SYNCHRONOUS` - 写同步；
+* `ST_MANDLOCK` - 强制锁FS；
+* `ST_WRITE` - 写文件、目录、符号链接；
+* `ST_APPEND` - 只允许追加文件；
+* `ST_IMMUTABLE` - 不可变文件；
+* `ST_NOATIME` - 不更新文件的最近访问时间；
+* `ST_NODIRATIME` - 不更新路径的最近访问时间；
+* `ST_RELATIME` - 将atime更新为mtime/ctime的相对值；
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+
+支持：Unix。
+
+### [os.supports_dir_fd](id:os.supports_dir_fd)
+
+
+
 
 ### [os.unlink(path, *, dir_fd=None)](id:os.unlink)
 
