@@ -955,7 +955,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
 
-### os.remove(path, *, dir_fd=None)
+### [os.remove(path, *, dir_fd=None)](id:os.remove)
 
 删除*path*。如果*path*是路径则抛出`OSError`。要删除目录请使用`rmdir()`。
 
@@ -963,7 +963,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 在Windows上，删除正在使用的文件会抛出异常；在Unix上，目录入口会被删除，但分配给文件的存储空间是无效的，直到该文件不再使用。
 
-此函数与[`unlink()`](#os.unlink))相同。
+此函数与[`unlink()`](#os.unlink))等价。
 
 支持：Unix，Windows。
 
@@ -1089,8 +1089,84 @@ st_mtime=1297230027, st_ctime=1297230027)
 
 ### [os.supports_dir_fd](id:os.supports_dir_fd)
 
+一个`set`对象，包括了`os`模块中所有支持*dir_fd*参数有效的函数。不同的平台上支持此参数的函数有所不同，在一个平台上支持，在另一个平台上可能就不支持了。为了保证一致性，所有提供*dir_fd*参数的函数都允许指定该参数，但是如果功能上不支持，会抛出异常。
 
+为了测试特定的函数是否允许使用*dir_fd*参数，可以在`supports_dir_fd`集合上使用`in`操作。下面测试了[`os.stat()`](#os.stat)函数的`dir_fd`参数是否在当前被平台下有效：
 
+```
+os.stat in os.supports_dir_fd
+```
 
-### [os.unlink(path, *, dir_fd=None)](id:os.unlink)
+目前，*dir_fd*参数只在Unix上有效，在Windows上都无效。
 
+### [os.supports_effective_ids](id:os.supports_effective_ids)
+
+一个`set`对象，包括了`os`模块中所有支持*effective_ids*参数有效的函数。如果当前平台支持，则该集合中将会包括[`os.access()`](#os.access)，否则集合为空。
+
+下面的例子测试了[`os.access()`](#os.access)函数的`effective_ids`参数是否在当前被平台下有效：
+
+```
+os.access in os.supports_effective_ids
+```
+
+目前，*effective_ids*参数只在Unix上有效，在Windows上都无效。
+
+### [os.supports_fd](id:os.supports_fd)
+
+一个`set`对象，包括了所有支持文件描述符形式的*path*参数的函数。不同的平台上支持此参数的函数有所不同，在一个平台上支持，在另一个平台上可能就不支持了。为了保证一致性，所有提供*fd*参数的函数都允许指定该参数，但是如果功能上不支持，会抛出异常。
+
+为了测试特定的函数是否允许使用*supports_fd*参数，可以在`supports_fd`集合上使用`in`操作。下面测试了[`os.chdir()`](#os.chdir)函数是否接受文件描述符做参数：
+
+```
+os.chdir in os.supports_fd
+```
+
+### [os.supports_follow_symlinks](id:os.supports_follow_symlinks)
+
+一个`set`对象，包括了`os`模块中所有支持*follow_symlinks*参数有效的函数。不同的平台上支持此参数的函数有所不同，在一个平台上支持，在另一个平台上可能就不支持了。为了保证一致性，所有提供*follow_symlinks*参数的函数都允许指定该参数，但是如果功能上不支持，会抛出异常。
+
+为了测试特定的函数是否允许使用*supports_fd*参数，可以在`supports_follow_symlinks`集合上使用`in`操作。下面测试了[`os.stat()`](#os.stat)函数是否接受文件描述符做参数：
+
+```
+os.stat in os.supports_follow_symlinks
+```
+
+### [os.symlink(source, link_name, target_is_directory=False, *, dir_fd=None)](id:os.symlink)
+
+新建一个名为*link_name*的符号链接，指向*source*。
+
+在Windows上，符号链接既可以表示文件，也可以表示目录，该链接不会随着目标改变。如果目标存在，则创建链接时就会匹配其类型。另外，在*target_is_directory*为`True`时，会创建一个目录链接，为`False`则是一个文件链接（默认）。
+
+Windows 6.0 (Vista)引进了符号链接，在以前的Windows版本中使用`symlink()`会抛出`NotImplementedError`。
+
+此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+
+注意：在Windows上，要成功创建一个符号链接则必须有*SeCreateSymbolicLinkPrivilege*权限。普通用户一般不具备此权限，只有那些能够升级为管理员的用户才可以使用此权限。所以，如果想要成功创建符号链接，要么得到该权限，要么使用管理员运行程序。
+
+权限不够时调用此函数会抛出`OSError`。
+
+支持：Unix，Windows。
+
+### [os.sync()](id:os.sync)
+
+强制将所有内容写入磁盘。
+
+支持：Unix。
+
+### [os.truncate(path, length)](id:os.truncate)
+
+截断*path*指定的文件，使其最多只有*length*个字节大小。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+
+支持：Unix。
+
+### os.unlink(path, *, dir_fd=None)
+
+删除*path*指定的文件。此函数与[`remove()`](#os.remove)等价。`unlink`这个名字来自Unix的习惯。详情参见[`remove()`](#os.remove)函数。
+
+支持：Unix，Windows。
+
+### [os.utime(path, times=None, *, ns=None, dir_fd=None, follow_symlinks=True)](id.utime)
+
+设置*path*所指定文件的访问时间与修改时间。
