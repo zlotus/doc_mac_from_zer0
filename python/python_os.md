@@ -1167,6 +1167,21 @@ Windows 6.0 (Vista)引进了符号链接，在以前的Windows版本中使用`sy
 
 支持：Unix，Windows。
 
-### [os.utime(path, times=None, *, ns=None, dir_fd=None, follow_symlinks=True)](id.utime)
+### [os.utime(path, times=None, *, ns=None, dir_fd=None, follow_symlinks=True)](id:os.utime)
 
 设置*path*所指定文件的访问时间与修改时间。
+
+`utime()`有两个可选参数*times*和*ns*，它们对*path*参数所指文件的作用如下：
+
+* 如果*ns*不为`None`，则参数必须是一个有两个元素的元组，以`(atime_ns, mtime_ns)`形式给出，并且每个成员都必须是整型，单位为纳秒；
+* 如果*times*不为`None`，则参数必须是一个有两个元素的元组，以`(atime, mtime)`形式给出，成员可以是整型也可以是浮点型，单位为纳秒；
+* 如果*times*和*ns*都是`None`，相当于指定`ns=(atime_ns, mtime_ns)`，且两个参数都是当前时间；
+
+不能同时为*times*和*ns*指定元组作为参数。
+
+能否将目录传给*path*参数取决于操作系统是否支持将目录当做文件（Windows就不支持）。应该注意的是，设置的精确时间可能并不会被接下来调用的[`stat()`](#os.stat)函数返回，这取决于操作系统中访问时间与修改时间的精确度，详见[`stat()`](#os.stat)。保存精确时间的最好方法，是传给`utime()`的*ns*参数`os.stat()`返回对象的*st_atime_ns*和*st_mtime_ns*属性。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。
+
+支持：Unix，Windows。
+
