@@ -378,7 +378,7 @@ for fd in range(fd_low, fd_high):
 
 如果*fd*关联的设备连接到一个终端，则返回一个描述设备编码的字符串，否则返回`None`。
 
-### os.dup(fd)
+### [os.dup(fd)](id:os.dup)
 
 返回文件描述符*fd*的副本，新的文件描述符是不可继承的。
 
@@ -871,7 +871,7 @@ else:
 
 支持：Unix，Windows。
 
-### os.listdir(path='.')
+### [os.listdir(path='.')](id:os.listdir)
 
 以列表形式返回*path*中所有对象的名字。名称没有排序，且不包含特殊路径`.`和`..`。
 
@@ -1185,3 +1185,88 @@ Windows 6.0 (Vista)引进了符号链接，在以前的Windows版本中使用`sy
 
 支持：Unix，Windows。
 
+### [os.walk(top, topdown=True, onerror=None, followlinks=False)](id:os.walk)
+
+返回一个生成器，自上而下或自下而上的遍历指定目录。根节点下的每一个目录（包括根节点）都会返回一个型为`(dirpath, dirnames, filenames)`的元组。
+
+*dirpath*是目录的路径，字符串形式；*dirnames*是*dirpath*下的子目录名称列表（不包括`.`和`..`）；*filenames*是非目录节点的名称列表，不包含完整路径，只有文件名。如果要得到文件的完整路径，使用`os.path.join(dirpath, name)`。
+
+如果*topdown*为真或缺省，则根目录信息会在其子目录信息之前输出（自上而下的遍历）；如果*topdown*置为`False`，则根目录信息会在其所有子目录信息输出之后才输出（自下而上的遍历）。
+
+如果*topdown*为真，函数会就地修改*dirnames*列表（可能是使用`del`或切片赋值），使得函数只需要继续遍历*dirnames*中剩下的子目录即可；此行为会简化遍历，指定遍历顺序，甚至可以在再次递归调用`walk()`之前通知函数“调用者新建或重命名了哪些目录”。将*topdown*置为`False`会降低效率，因为自下而上遍历时，*dirnames*中的目录名称会在*dirpath*之前给出。
+
+默认的，此函数调用[`listdir()`](#os.listdir)时的异常会被忽略。如果要指定可选参数*onerror*，则必须指定一个函数，该函数必须接收一个`OSError`的实例作为唯一参数。通常该函数用以记录异常，使得遍历可以继续，或是直接抛出异常，以终止遍历。如果出现异常，异常的实例会具备`filename`属性，用以存放发生异常的文件名。
+
+默认的，此函数不会跟踪符号链接去解析另一个目录。不过，在系统支持的情况下，将*followlinks*置为`True`会使得函数可以解析符号链接。
+
+注意：*followlinks*为`True`时，如果符号链接指向此目录的某个父目录，则会导致无限递归，因为此函数不会跟踪已经访问过的目录。
+
+注意：如果指定的是相对路径，则在下一次`walk()`调用前不要改变当前工作目录。因为`walk()`不会改变当前目录，并会假设调用者也不会改变此目录。
+
+下面的例子可以统计每个目录下非目录文件的总大小，并且在遍历时跳过那些名为“CVS”的目录：
+
+```
+import os
+from os.path import join, getsize
+for root, dirs, files in os.walk('python/Lib/email'):
+    print(root, "consumes", end=" ")
+    print(sum(getsize(join(root, name)) for name in files), end=" ")
+    print("bytes in", len(files), "non-directory files")
+    if 'CVS' in dirs:
+        dirs.remove('CVS')  # don't visit CVS directories
+```
+
+下面的例子中，自下而上的遍历成为了关键，因为`rmdir()`在目录为空前不能删除该目录：
+
+```
+# Delete everything reachable from the directory named in "top",
+# assuming there are no symbolic links.
+# CAUTION:  This is dangerous!  For example, if top == '/', it
+# could delete all your disk files.
+import os
+for root, dirs, files in os.walk(top, topdown=False):
+    for name in files:
+        os.remove(os.path.join(root, name))
+    for name in dirs:
+        os.rmdir(os.path.join(root, name))
+```
+
+### [os.fwalk(top='.', topdown=True, onerror=None, *, follow_symlinks=False, dir_fd=None)](id:os.fwalk)
+
+函数行为与[`walk()`](#os.walk)相同，只不过在便利时返回的元组是`(dirpath, dirnames, filenames, dirfd)`形式的，而且函数支持*dir_fd*参数。
+
+*dirpath*, *dirnames*和*filenames*与[`walk()`](#os.walk)中的一致，而*dirfd*是与*dirpath*关联的文件描述符。
+
+此函数同样支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。尽管如此，此函数*follow_symlinks*参数默认为`False`。
+
+注意：此函数会返回文件描述符，而这些文件描述符只有在下一次迭代前可以访问，所以，如果不想文件描述符失效的话，可以使用[`dup()`](#os.dup())函数复制要用的文件描述符。
+
+下面的例子可以统计每个目录下非目录文件的总大小，并且在遍历时跳过那些名为“CVS”的目录：
+
+```
+import os
+for root, dirs, files, rootfd in os.fwalk('python/Lib/email'):
+    print(root, "consumes", end="")
+    print(sum([os.stat(name, dir_fd=rootfd).st_size for name in files]),
+          end="")
+    print("bytes in", len(files), "non-directory files")
+    if 'CVS' in dirs:
+        dirs.remove('CVS')  # don't visit CVS directories
+```
+
+下面的例子中，自下而上的遍历成为了关键，因为`rmdir()`在目录为空前不能删除该目录：
+
+```
+# Delete everything reachable from the directory named in "top",
+# assuming there are no symbolic links.
+# CAUTION:  This is dangerous!  For example, if top == '/', it
+# could delete all your disk files.
+import os
+for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
+    for name in files:
+        os.unlink(name, dir_fd=rootfd)
+    for name in dirs:
+        os.rmdir(name, dir_fd=rootfd)
+```
+
+支持：Unix。
