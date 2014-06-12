@@ -1270,3 +1270,46 @@ for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
 ```
 
 支持：Unix。
+
+### Linux额外特性
+
+以下函数只在Linux中提供：
+
+### [os.getxattr(path, attribute, *, follow_symlinks=True)](id:os.getxattr)
+
+返回*path*的文件系统扩展属性*attribute*，*attribute*可以是`str`或`bytes`，如果是`str`，则使用文件系统编码。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+
+### [os.listxattr(path=None, *, follow_symlinks=True)](id:os.listxattr)
+
+返回*path*的文件系统扩展属性列表。列表中的属性以字符串形式给出，使用文件系统编码。如果*path*为`None`，则默认为当前目录。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+
+### [os.removexattr(path, attribute, *, follow_symlinks=True)](id:os.removexattr)
+
+删除*path*的文件系统扩展属性*attribute*，*attribute*可以是`str`或`bytes`，如果是`str`，则使用文件系统编码。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+
+### [os.setxattr(path, attribute, value, flags=0, *, follow_symlinks=True)](id:os.setxattr)
+
+将*path*的文件系统扩展属性*attribute*置为*value*。*attribute*必须是一个不为NUL的`str`或`bytes`，如果是`str`，则使用文件系统编码。*flags*可以是`XATTR_REPLACE`或`XATTR_CREATE`。如果设置`XATTR_REPLACE`时，指定的属性不存在，则抛出`EEXISTS`。如果设置为`XATTR_CREATE`时，指定的属性已经存在，则该属性不会被重新创建，函数抛出`ENODATA`。
+
+此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+
+注意：在内核版本低于2.6.39的某些系统中，可能会因为bug导致标识不起作用。
+
+### os.XATTR_SIZE_MAX
+
+扩展属性大小的上限，当前在Linux上为64 KiB。
+
+### os.XATTR_CREATE
+
+`setxattr()`的可用标识，告诉函数必须创建新属性。
+
+### os.XATTR_REPLACE
+
+`setxattr()`的可用标识，告诉函数必须替换已有属性。
+
