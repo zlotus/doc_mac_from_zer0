@@ -434,7 +434,7 @@ for fd in range(fd_low, fd_high):
 
 支持：Unix。
 
-### os.fsync(fd)
+### [os.fsync(fd)](id:os.fsync)
 
 强制将与文件描述符*fd*关联的文件写入磁盘。在Unix上，会调用系统的`fsync()`，在Windows上则是`_commit()`。
 
@@ -704,7 +704,7 @@ tuple的子类，以`(columns, lines)`的形式存放终端大小。
 
 * [指定文件描述符](id:specifying_a_file_descriptor)：对于很多函数，*path*参数不仅可以接受一个字符串作为路径名，而且可以接受一个文件描述符。若是文件描述符，则函数会继续操作描述符所关联的文件。（对于POSIX系统，Python会调用该函数的`f...`版本以支持对文件描述符的操作。）
     
-    可以通过`os.supports_fd`标识来判断当前平台是否支持将文件描述符当做*path*参数。如果不支持时强制使用文件描述符，则会抛出`NotImplementedError`异常。
+    可以通过[`os.supports_fd`](#os.supports_fd)标识来判断当前平台是否支持将文件描述符当做*path*参数。如果不支持时强制使用文件描述符，则会抛出`NotImplementedError`异常。
     
     如果函数有*dir_fd*和*follow_symlinks*参数，且当*path*参数为文件描述符时，指定前面的两个参数是错误的。
     
@@ -1313,3 +1313,37 @@ for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
 
 `setxattr()`的可用标识，告诉函数必须替换已有属性。
 
+## 进程管理
+
+以下函数可能用于创建或管理进程。
+
+[`exec*`](#os.execl)系列函数接受一个参数列表，并将其传入加载于当前进程的新程序。在每个函数中，参数列表中的第一个元素被当做该程序的名称传入，而后面的参数则被当做正常的、如同用户在命令行中输入的参数。对于C程序员，第一个元素相当于传给`main()`函数的`argv[0]`参数。示例：`os.execv('/bin/echo', ['foo', 'bar'])`只会输出`bar`，从输出来看`foo`是被忽略的。
+
+### [os.abort()](id:os.abort)
+
+给当前进程一个`SIGABRT`信号。在Unix上默认会产生一次内核dump；而在Windows上则会立刻终止进程并返回结束码`3`。请注意，这个函数不会调用Python信号管理函数`signal.signal()`来注册`SIGABRT`信号。
+
+支持：Unix，Windows。
+
+### [os.execl(path, arg0, arg1, ...)](id:osexecl)
+### [os.execle(path, arg0, arg1, ..., env)](id:os.execle)
+### [os.execlp(file, arg0, arg1, ...)](id:os.execlp)
+### [os.execlpe(file, arg0, arg1, ..., env)](id:os.execlpe)
+### [os.execv(path, args)](id:os.execv)
+### [os.execve(path, args, env)](id:os.execve)
+### [os.execvp(file, args)](id:os.execvp)
+### [os.execvpe(file, args, env)](id:os.execvpe)
+
+这些函数都会执行新的程序，并替换掉当前进程，且不返回。在Unix上，新的可执行对象会直接加载在当前进程中，并于其调用者的进程ID相同。中途的错误会以`OSError`形式抛出。
+
+当前的进程会被立刻替换。打开的文件对象和文件描述符并的缓冲区数据并不会因此被自动写入磁盘，所以，如果这些对象的缓冲区有数据，应当使用`sys.stdout.flush()`或[`os.fsync()`](#os.fsync)将其写入磁盘后，再调用[`exec*`](#os.execl)函数。
+
+“l”与“v”版本的[`exec*`](#os.execl)区别在于如何传递命令行参数。如果写代码时参数的个数是已知的，推荐使用“l”版本，因为这些独立的参数将以[`exec*`](#os.execl)的附加参数形式传入。当参数的个数可变时，推荐使用“v”版，此时的参数*args*将以列表或元组的形式传入。不论哪种形式，传入参数的第一个元素应当是该程序的名称，但这不是强制的。
+
+“p”版的函数（`execlp()`, `execlpe()`, `execvp()`, `execvpe()`）会使用环境变量中的`PATH`来查找强音运行的程序*file*。当环境被替换时（使用[`exec*e`](#os.execle)函数，见下一段），新的环境会被当做`PATH`的来源。而`execl()`, `execle()`, `execv()`, `execve()`则不会使用`PATH`查找可执行程序；*path*必须是正确的绝对或相对路径。
+
+“e”版的函数（execle(), execlpe(), execve(), execvpe()）中的*env*参数必须是一个映射，用于定义新进程运行时的环境变量（会代替当前进程的运行时环境）。由这些函数唤起的新进程会继承当前进程的运行环境。
+
+对于`execve()`，在部分平台上，*path*也可以指定为文件描述符，可以使用[`os.supports_fd`](#os.supports_fd)来检查此特性是否被当前平台支持。在不支持时强行使用文件描述符会抛出`NotImplementedError`。
+
+支持：Unix，Windows。
