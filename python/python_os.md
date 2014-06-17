@@ -1347,3 +1347,131 @@ for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
 对于`execve()`，在部分平台上，*path*也可以指定为文件描述符，可以使用[`os.supports_fd`](#os.supports_fd)来检查此特性是否被当前平台支持。在不支持时强行使用文件描述符会抛出`NotImplementedError`。
 
 支持：Unix，Windows。
+
+### [os._exit(n)](id:os._exit)
+
+使用结束码`n`退出进程。此函数会直接结束进程，而不进行诸如“将缓存数据写入磁盘”之类的收尾工作。
+
+支持：Unix，Windows。
+
+注意：通常使用`sys.exit(n)`结束进程，`_exit()`一般只用于结束[`fork()`](#os.fork)产生的子进程。
+
+下面列出可以用在`_exit()`中的结束码，函数并不强制使用这些结束码。它们通常用于Python编写的系统程序，如邮件服务器的外部递送程序。
+
+注意，这些结束码中的一部分可能不被Unix支持。
+
+### [os.EX_OK](id:os.EX_OK)
+
+表示正常退出的结束码。
+
+支持：Unix。
+
+### [os.EX_USAGE](id:os.EX_USAGE)
+
+表示命令使用有误的结束码，比如给错了参数个数。
+
+支持：Unix。
+
+### [os.EX_DATAERR](id:os.EX_DATAERR)
+
+表示输入数据有误的结束码。
+
+支持：Unix。
+
+### [os.EX_NOINPUT](id:os.EX_NOINPUT)
+
+表示输入文件不存在或不可读的结束码。
+
+支持：Unix。
+
+### [os.EX_NOUSER](id:os.EX_NOUSER)
+
+表示指定用户不存在的结束码。
+
+支持：Unix。
+
+### [os.EX_NOHOST](id:os.EX_NOHOST)
+
+表示指定主机不存在的结束码。
+
+支持：Unix。
+
+### [os.EX_UNAVAILABLE](id:os.EX_UNAVAILABLE)
+
+表示指定服务不存在的结束码。
+
+支持：Unix。
+
+### [os.EX_SOFTWARE](id:os.EX_SOFTWARE)
+
+表示侦测到软件内部错误的结束码。
+
+支持：Unix。
+
+### [os.EX_OSERR](id:os.EX_OSERR)
+
+表示侦测到操作系统错误的结束码，比如在不能fork进程或无法创建管道时。
+
+支持：Unix。
+
+### [os.EX_OSFILE](id:os.EX_OSFILE)
+
+表示某些系统文件缺失、无法打开、或其他错误的结束码。
+
+支持：Unix。
+
+### [os.EX_CANTCREAT](id:os.EX_CANTCREAT)
+
+表示用户指定的输出文件不能被创建的结束码。
+
+支持：Unix。
+
+### [os.EX_IOERR](id:os.EX_IOERR)
+
+表示在I/O操作时发生错误的结束码。
+
+支持：Unix。
+
+### [os.EX_TEMPFAIL](id:os.EX_TEMPFAIL)
+
+表示发生暂时性异常的结束码，这有时并不代表发生了错误，比如“无法建立网络连接等待重试”。
+
+支持：Unix。
+
+### [os.EX_PROTOCOL](id:os.EX_PROTOCOL)
+
+表示协议交换时发生的不合法、无效、不识别等情况的结束码。
+
+支持：Unix。
+
+### [os.EX_NOPERM](id:os.EX_NOPERM)
+
+表示执行操作（指的不是文件系统错误）时权限不够的结束码。
+
+支持：Unix。
+
+### [os.EX_CONFIG](id:os.EX_CONFIG)
+
+表示发生了配置错误的结束码。
+
+支持：Unix。
+
+### [os.EX_NOTFOUND](id:os.EX_NOTFOUND)
+
+表示发生了类似“某对象未找到”错误的结束码。
+
+支持：Unix。
+
+### [os.fork()](id:os.fork)
+
+Fork一个子进程，给子进程返回`0`，给父进程返回子进程ID。如果中途发生错误则抛出`OSError`。
+
+应该留意，包括FreeBSD <= 6.3和Cygwin在内的部分平台在fork线程时存在问题。
+
+警告：对于使用SSL模块fork进程的程序，请先阅读`ssl`模块的文档。
+
+### [os.forkpty()](id:os.forkpty)
+
+Fork一个子进程，新建一个伪终端作为子进程的控制终端。返回一对`(pid, fd)`，其中的*pid*在子进程中返回`0`，在父进程中返回子进程ID；而*fd*是伪终端的文件描述符。如果需要更强的可移植性，请使用`pty`模块。如果中途发生错误则抛出`OSError`。
+
+支持：多数Unix。
