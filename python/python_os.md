@@ -336,7 +336,7 @@ Python3.1后：在一些环境中，使用文件系统编码可能会产生错�
 
 支持：多数Unix，Windows。
 
-## 创建文件对象
+## [创建文件对象](id:file-object-creation)
 
 此函数会创建新的文件对象（见`os.open()`，用以打开文件描述符）。
 
@@ -702,17 +702,17 @@ tuple的子类，以`(columns, lines)`的形式存放终端大小。
 
 对于一些Unix平台，模块中的很多函数都有以下一种或几种特性：
 
-* [指定文件描述符](id:specifying_a_file_descriptor)：对于很多函数，*path*参数不仅可以接受一个字符串作为路径名，而且可以接受一个文件描述符。若是文件描述符，则函数会继续操作描述符所关联的文件。（对于POSIX系统，Python会调用该函数的`f...`版本以支持对文件描述符的操作。）
+* [指定文件描述符](id:path-fd)：对于很多函数，*path*参数不仅可以接受一个字符串作为路径名，而且可以接受一个文件描述符。若是文件描述符，则函数会继续操作描述符所关联的文件。（对于POSIX系统，Python会调用该函数的`f...`版本以支持对文件描述符的操作。）
     
     可以通过[`os.supports_fd`](#os.supports_fd)标识来判断当前平台是否支持将文件描述符当做*path*参数。如果不支持时强制使用文件描述符，则会抛出`NotImplementedError`异常。
     
     如果函数有*dir_fd*和*follow_symlinks*参数，且当*path*参数为文件描述符时，指定前面的两个参数是错误的。
     
-* [目录描述符的相对路径](id:paths_relative_to_directory_descriptors)：若*dir_fd*不为`None`，则应指定为某个目录关联的文件描述符，其他的参数都应指定为该目录的相对路径。若提供绝对路径，则*dir_fd*会被忽略。（对于POSIX系统，Python会调用该函数的`...at`和`f...at`版本以支持对目录描述符的操作。）
+* [目录描述符的相对路径](id:dir-fd)：若*dir_fd*不为`None`，则应指定为某个目录关联的文件描述符，其他的参数都应指定为该目录的相对路径。若提供绝对路径，则*dir_fd*会被忽略。（对于POSIX系统，Python会调用该函数的`...at`和`f...at`版本以支持对目录描述符的操作。）
     
     可以通过`os.supports_dir_fd`标识来判断当前平台是否支持将文件描述符当做*dir_fd*参数。如果不支持时强制使用目录描述符，则会抛出`NotImplementedError`异常。
     
-* [不跟踪符号链接](id:not_following_symlinks)（软链接）：若*follow_symlinks*为`False`，且路径最后一个元素所指的是一个符号链接，函数会直接操作该符号链接，而不是符号链接所指的对象。（对于POSIX系统，Python会调用该函数的`l...`版本以支持对符号链接的操作。）
+* [不跟踪符号链接](id:follow-symlinks)（软链接）：若*follow_symlinks*为`False`，且路径最后一个元素所指的是一个符号链接，函数会直接操作该符号链接，而不是符号链接所指的对象。（对于POSIX系统，Python会调用该函数的`l...`版本以支持对符号链接的操作。）
     
     可以通过`os.supports_follow_symlinks`标识来判断当前平台是否支持符号链接操作。如果不支持时强行操作符号链接，则会抛出`NotImplementedError`异常。
 
@@ -720,7 +720,7 @@ tuple的子类，以`(columns, lines)`的形式存放终端大小。
 
 使用实际uid/gid测试是否可以访问*path*。应该了解的是，大多数操作使用有效uid/gid，所以在使用suid/sgid的环境中同样可以用于测试调用者是否对*path*有足够的访问权限。将*mode*置为`F_OK`用以测试*path*是否存在，也可以通过并操作结合`R_OK`, `W_OK`, `X_OK`选项测试访问权限。如果允许访问则返回`True`，否则返回`False`。更多细节参见`access(2)`的`man`手册。
 
-此函数支持设置[目录描述符的相对路径](#paths_relative_to_directory_descriptors)和[不跟踪符号链接](#not_following_symlinks)。
+此函数支持设置[目录描述符的相对路径](#dir-fd)和[不跟踪符号链接](#follow-symlinks)。
 
 如果`effective_ids`置为`True`，`access()`将使用有效uid/gid代替实际uid/gid进行访问权限测试。可以通过`os.supports_effective_ids`标识来判断当前平台是否支持有效ID。如果不支持时强行设置，则会抛出`NotImplementedError`异常。
 
@@ -762,7 +762,7 @@ else:
 
 改变当前工作目录。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)。描述符必须指向一个打开的目录，而不是文件。
+此函数支持[指定文件描述符](#path-fd)。描述符必须指向一个打开的目录，而不是文件。
 
 支持：Unix，Windows。
 
@@ -783,7 +783,7 @@ else:
 * stat.SF_NOUNLINK
 * stat.SF_SNAPSHOT
 
-此函数支持[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[不跟踪符号链接](#follow-symlinks)。
 
 ### [os.chmod(path, mode, *, dir_fd=None, follow_symlinks=True)](id:os.chmod)
 
@@ -809,7 +809,7 @@ else:
 * stat.S_IWOTH
 * stat.S_IXOTH
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[目录描述符的相对路径](#dir-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 注意：尽管Windows也有支持`chmod()`函数，但只允许用户修改文件是否只读的属性（通过`stat.S_IWRITE`、`stat.S_IREAD`选项或选项的对应数值）。其他权限位会被忽略。
 
@@ -817,7 +817,7 @@ else:
 
 将*path*的属主、属组ID分别置为*uid*和*gid*。如果其中的某个ID不需要修改，只需将该ID置为-1.
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[目录描述符的相对路径](#dir-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 参考高级函数`shutil.chown()`，除了接受ID，还接受属主/属组名称作为参数。
 
@@ -867,7 +867,7 @@ else:
 
 创建一个指向*src*，名为*dst*的硬链接。
 
-此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)和[不跟踪符号链接](#not_following_symlinks)。
+此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#dir-fd)和[不跟踪符号链接](#follow-symlinks)。
 
 支持：Unix，Windows。
 
@@ -877,13 +877,13 @@ else:
 
 *path*可以是`str`或`bytes`。如果参数为*bytes*，则返回值列表中的元素也为`bytes`类型；如果参数为*str*，则返回值列表中的元素也为`str`类型。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)，且文件描述符必须指向目录。
+此函数支持[指定文件描述符](#path-fd)，且文件描述符必须指向目录。
 
 ### os.lstat(path, *, dir_fd=None)
 
 与系统的`lstat()`起同样的作用。用法类似[`stat()`](#os.stat)，但是不跟踪符号链接。在不支持符号链接的平台上，此函数等同于`stat()`。在Python3.3上，相当于`os.stat(path, dir_fd=dir_fd, follow_symlinks=False)`。
 
-此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数支持[目录描述符的相对路径](#dir-fd)。
 
 ### os.mkdir(path, mode=0o777, *, dir_fd=None)
 
@@ -891,7 +891,7 @@ else:
 
 在一些系统上，*mode*会被忽略。当支持*mode*时，会先使用当前掩码遮罩输出。如果路径以及存在，则抛出`OSError`。
 
-此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数支持[目录描述符的相对路径](#dir-fd)。
 
 此函数也支持创建临时目录，见`tempfile`模块的`tempfile.mkdtemp()`函数。
 
@@ -913,7 +913,7 @@ else:
 
 使用模式*mode*创建一个名为*path*的FIFO（命名管道），使用当前掩码遮罩。
 
-函数同样支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+函数同样支持[目录描述符的相对路径](#dir-fd)。
 
 FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使用[`os.unlink()`](#os.unlink)）前会一直存在。FIFO通常用来作“server”型进程与“client”型进程之间的数据交互：server进程打开FIFO读取数据，client打开FIFO写入数据。注意到`mkfifo()`并不负责打开FIFO，它只是创建而已。
 
@@ -923,7 +923,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 创建一个名为*filename*的文件系统节点（如文件、设备或命名管道）。*mode*参数指定权限位和节点类型（`stat.S_IFREG`, `stat.S_IFCHR`, `stat.S_IFBLK`, `stat.S_IFIFO`的按位或组合，这些常量定义在`stat`模块中）。选择`stat.S_IFCHR`和`stat.S_IFBLK`时，使用参数*device*指定新建的设备文件（可能使用[`os.makedev()`](#os.makedev)函数）；否则会忽略该参数。
 
-函数同样支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+函数同样支持[目录描述符的相对路径](#dir-fd)。
 
 ### os.major(device)
 
@@ -943,7 +943,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 如果*name*是字符串，且未定义在系统中，则会抛出`ValueError`；如果*name*不被操作系统支持，即使定义在`pathconf_names`中，也会抛出`OSError`，并附带一个`errno.EINVAL`的错误代码。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+此函数支持[指定文件描述符](#path-fd)。
 
 支持：Unix。
 
@@ -953,13 +953,13 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 如果*path*以字符串形式给出，则返回值也是字符串，如果中途出错则会抛出`UnicodeDecodeError`。如果*path*以字节形式给出，则返回值也是字节形式。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+此函数支持[指定文件描述符](#path-fd)。
 
 ### [os.remove(path, *, dir_fd=None)](id:os.remove)
 
 删除*path*。如果*path*是路径则抛出`OSError`。要删除目录请使用`rmdir()`。
 
-此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数支持[目录描述符的相对路径](#dir-fd)。
 
 在Windows上，删除正在使用的文件会抛出异常；在Unix上，目录入口会被删除，但分配给文件的存储空间是无效的，直到该文件不再使用。
 
@@ -975,7 +975,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 将文件或目录名*src*该为*dst*。如果*dst*是目录，则会抛出异常`OSError`。在Unix上，如果*dst*是一个存在的文件，在权限足够的情况下文件名会被静默的替换。在一些Unix系统上，如果*src*与*dst*在不同的文件系统上时，可能会导致操作失败。如果操作成功，重命名操作将会是一个原子操作（POSIX系统的必须条件）。在Windows上，如果*dst*已存在，即使是文件，也会抛出`OSError`。
 
-此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#dir-fd)。
 
 如果需要跨系统重新目的路径，使用[`replace()`](#os.replace)。若在一个文件系统内，可以使用此函数来移动文件。
 
@@ -991,7 +991,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 将*src*重命名为*dst*。如果*dst*是目录，则抛出`OSError`。如果*dst*是一个存在的文件，在权限足够的情况下文件名会被静默的替换。如果*src*与*dst*在不同的文件系统上时，可能会导致操作失败。如果操作成功，重命名操作将会是一个原子操作（POSIX系统的必须条件）。
 
-此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数提供参数*src_dir_fd*和*dst_dir_fd*，以支持[目录描述符的相对路径](#dir-fd)。
 
 支持：Unix，Windows。
 
@@ -999,7 +999,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 删除目录*path*。只有在*path*为空时才可以成功，否则会抛出`OSError`。如果要删除整个目录树，可以使用`shutil.rmtree()`。
 
-此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数支持[目录描述符的相对路径](#dir-fd)。
 
 支持：Unix，Windows。
 
@@ -1045,7 +1045,7 @@ FIFO是一种可以被当做普通文件访问的管道。FIFO在删除（如使
 
 为了保证向后兼容性，[`stat()`](#os.stat)总是返回由至少10个元素组成的元组，这10个元素是`stat`结构体最重要（也是通用的，可移植的）的10个成员，按顺序分别为`st_mode`, `st_ino`, `st_dev`, `st_nlink`, `st_uid`, `st_gid`, `st_size`, `st_atime`, `st_mtime`, `st_ctime`。额外的成员可能继续追加在元组的尾部。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 `stat`标准模块定义了用于从`stat`结构体中解析出可读信息的函数及常量。（在Windows上，一些成员会被预设为虚值(dummy value)）。
 
@@ -1083,7 +1083,7 @@ st_mtime=1297230027, st_ctime=1297230027)
 * `ST_NODIRATIME` - 不更新路径的最近访问时间；
 * `ST_RELATIME` - 将atime更新为mtime/ctime的相对值；
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+此函数支持[指定文件描述符](#path-fd)。
 
 支持：Unix。
 
@@ -1139,7 +1139,7 @@ os.stat in os.supports_follow_symlinks
 
 Windows 6.0 (Vista)引进了符号链接，在以前的Windows版本中使用`symlink()`会抛出`NotImplementedError`。
 
-此函数支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)。
+此函数支持[目录描述符的相对路径](#dir-fd)。
 
 注意：在Windows上，要成功创建一个符号链接则必须有*SeCreateSymbolicLinkPrivilege*权限。普通用户一般不具备此权限，只有那些能够升级为管理员的用户才可以使用此权限。所以，如果想要成功创建符号链接，要么得到该权限，要么使用管理员运行程序。
 
@@ -1157,7 +1157,7 @@ Windows 6.0 (Vista)引进了符号链接，在以前的Windows版本中使用`sy
 
 截断*path*指定的文件，使其最多只有*length*个字节大小。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)。
+此函数支持[指定文件描述符](#path-fd)。
 
 支持：Unix。
 
@@ -1181,7 +1181,7 @@ Windows 6.0 (Vista)引进了符号链接，在以前的Windows版本中使用`sy
 
 能否将目录传给*path*参数取决于操作系统是否支持将目录当做文件（Windows就不支持）。应该注意的是，设置的精确时间可能并不会被接下来调用的[`stat()`](#os.stat)函数返回，这取决于操作系统中访问时间与修改时间的精确度，详见[`stat()`](#os.stat)。保存精确时间的最好方法，是传给`utime()`的*ns*参数`os.stat()`返回对象的*st_atime_ns*和*st_mtime_ns*属性。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[目录描述符的相对路径](#dir-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 支持：Unix，Windows。
 
@@ -1237,7 +1237,7 @@ for root, dirs, files in os.walk(top, topdown=False):
 
 *dirpath*, *dirnames*和*filenames*与[`walk()`](#os.walk)中的一致，而*dirfd*是与*dirpath*关联的文件描述符。
 
-此函数同样支持[目录描述符的相对路径](#paths_relative_to_directory_descriptors)、[不跟踪符号链接](#not_following_symlinks)。尽管如此，此函数*follow_symlinks*参数默认为`False`。
+此函数同样支持[目录描述符的相对路径](#dir-fd)、[不跟踪符号链接](#follow-symlinks)。尽管如此，此函数*follow_symlinks*参数默认为`False`。
 
 注意：此函数会返回文件描述符，而这些文件描述符只有在下一次迭代前可以访问，所以，如果不想文件描述符失效的话，可以使用[`dup()`](#os.dup())函数复制要用的文件描述符。
 
@@ -1279,25 +1279,25 @@ for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
 
 返回*path*的文件系统扩展属性*attribute*，*attribute*可以是`str`或`bytes`，如果是`str`，则使用文件系统编码。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 ### [os.listxattr(path=None, *, follow_symlinks=True)](id:os.listxattr)
 
 返回*path*的文件系统扩展属性列表。列表中的属性以字符串形式给出，使用文件系统编码。如果*path*为`None`，则默认为当前目录。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 ### [os.removexattr(path, attribute, *, follow_symlinks=True)](id:os.removexattr)
 
 删除*path*的文件系统扩展属性*attribute*，*attribute*可以是`str`或`bytes`，如果是`str`，则使用文件系统编码。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 ### [os.setxattr(path, attribute, value, flags=0, *, follow_symlinks=True)](id:os.setxattr)
 
 将*path*的文件系统扩展属性*attribute*置为*value*。*attribute*必须是一个不为NUL的`str`或`bytes`，如果是`str`，则使用文件系统编码。*flags*可以是`XATTR_REPLACE`或`XATTR_CREATE`。如果设置`XATTR_REPLACE`时，指定的属性不存在，则抛出`EEXISTS`。如果设置为`XATTR_CREATE`时，指定的属性已经存在，则该属性不会被重新创建，函数抛出`ENODATA`。
 
-此函数支持[指定文件描述符](#specifying_a_file_descriptor)、[不跟踪符号链接](#not_following_symlinks)。
+此函数支持[指定文件描述符](#path-fd)、[不跟踪符号链接](#follow-symlinks)。
 
 注意：在内核版本低于2.6.39的某些系统中，可能会因为bug导致标识不起作用。
 
@@ -1342,7 +1342,7 @@ for root, dirs, files, rootfd in os.fwalk(top, topdown=False):
 
 “p”版的函数（`execlp()`, `execlpe()`, `execvp()`, `execvpe()`）会使用环境变量中的`PATH`来查找强音运行的程序*file*。当环境被替换时（使用[`exec*e`](#os.execle)函数，见下一段），新的环境会被当做`PATH`的来源。而`execl()`, `execle()`, `execv()`, `execve()`则不会使用`PATH`查找可执行程序；*path*必须是正确的绝对或相对路径。
 
-“e”版的函数（execle(), execlpe(), execve(), execvpe()）中的*env*参数必须是一个映射，用于定义新进程运行时的环境变量（会代替当前进程的运行时环境）。由这些函数唤起的新进程会继承当前进程的运行环境。
+“e”版的函数（execle(), execlpe(), execve(), execvpe()）中的*env*参数必须是一个映射，用于定义新进程运行时的环境变量（会代替当前进程的运行时环境）。由`execl()`, `execlp()`, `execv()`, `execvp()`函数唤起的新进程会继承当前进程的运行环境。
 
 对于`execve()`，在部分平台上，*path*也可以指定为文件描述符，可以使用[`os.supports_fd`](#os.supports_fd)来检查此特性是否被当前平台支持。在不支持时强行使用文件描述符会抛出`NotImplementedError`。
 
@@ -1475,3 +1475,68 @@ Fork一个子进程，给子进程返回`0`，给父进程返回子进程ID。�
 Fork一个子进程，新建一个伪终端作为子进程的控制终端。返回一对`(pid, fd)`，其中的*pid*在子进程中返回`0`，在父进程中返回子进程ID；而*fd*是伪终端的文件描述符。如果需要更强的可移植性，请使用`pty`模块。如果中途发生错误则抛出`OSError`。
 
 支持：多数Unix。
+
+### [os.kill(pid, sig)](id:os.kill)
+
+将信号*sig*送往进程*pid*。主机平台支持的信号常量定义在[`signal`](https://docs.python.org/3/library/signal.html#module-signal)模块中。
+
+对于Windows：[`signal.CTRL_C_EVENT`](https://docs.python.org/3/library/signal.html#signal.CTRL_C_EVENT)和[`signal.CTRL_BREAK_EVENT`](https://docs.python.org/3/library/signal.html#signal.CTRL_BREAK_EVENT)信号只能送往共享终端窗口的命令提示符进程，比如一些子进程。如果给*sig*赋予其他任何值，都会使得进程被TerminateProcess API无条件终止，而结束码将为*sig*。Windows版的`kill()`会额外终止进程句柄。
+
+参见：[signal.pthread_kill()](https://docs.python.org/3/library/signal.html#signal.pthread_kill)
+
+### [os.killpg(pgid, sig)](id:os.killpg)
+
+将信号*sig*送往进程组*pgid*。
+
+支持：Unix。
+
+### [os.nice(increment)](id:os.nice)
+
+给进程增加大小为*increment*的nice值（优先级值NI），返回新的nice值。
+
+支持：Unix。
+
+### [os.plock(op)](id:os.plock)
+
+将程序段锁入内存，*op*值（定义在`<sys/lock.h>`中）用于指定锁定的片段。
+
+支持：Unix。
+
+### [os.popen(...)](id:os.popen)
+
+新起子进程，返回用以通信的打开的管道。此类函数的详细描述在[创建文件对象](#file-object-creation)一节。
+
+### [os.spawnl(mode, path, ...)](id:os.spawnl)
+### [os.spawnle(mode, path, ..., env)](id:os.spawnle)
+### [os.spawnlp(mode, file, ...)](id:os.spawnlp)
+### [os.spawnlpe(mode, file, ..., env)](id:os.spawnlpe)
+### [os.spawnv(mode, path, args)](id:os.spawnv)
+### [os.spawnve(mode, path, args, env)](id:os.spawnve)
+### [os.spawnvp(mode, file, args)](id:os.spawnvp)
+### [os.spawnvpe(mode, file, args, env)](id:os.spawnvpe)
+
+在新进程中执行*path*指定的程序。
+
+注：[`subprocess`](https://docs.python.org/3/library/subprocess.html#module-subprocess)模块提供了功能更加强大的用于新建子进程并取回其执行结果的工具。所以更推荐使用`subprocess`模块，留意[使用subprocess模块代替旧版函数](https://docs.python.org/3/library/subprocess.html#subprocess-replacements)一节。
+
+如果*mode*设为[`P_NOWAIT`](#os.P_NOWAIT)，则此函数返回新进程的ID；如果*mode*设为[`P_WAIT`](#os.P_WAIT)，在进程正常结束时返回其结束码，在指定终止信号*signal*时返回`-signal`。在Windows上，进程ID就是进程句柄，所以可以用于[`waitpid()`](#os.waitpid)函数。
+
+“l”和“v”版本的[`spawn*`](#os.spawnl)函数的区别在于如何传递命令行参数。如果写代码时参数的个数是已知的，推荐使用“l”版本，因为这些独立的参数将以[`exec*`](#os.execl)的附加参数形式传入。当参数的个数可变时，推荐使用“v”版，此时的参数*args*将以列表或元组的形式传入。不论哪种形式，传入参数的第一个元素应当是该程序的名称。
+
+“p”版的函数（`spawnlp()`, `spawnlpe()`, `spawnvp()`, `spawnvpe()`）会使用环境变量中的`PATH`来查找强音运行的程序*file*。当环境被替换时（使用[`spawn*e`](#os.spawnle)函数，见下一段），新的环境会被当做`PATH`的来源。而`spawnl()`, `spawnle()`, `spawnv()`, `spawnve()`则不会使用`PATH`查找可执行程序；*path*必须是正确的绝对或相对路径。
+
+“e”版的函数（`spawnle()`, `spawnlpe()`, `spawnve()`, `spawnvpe()`）中的*env*参数必须是一个映射，用于定义新进程运行时的环境变量（会代替当前进程的运行时环境）。由`spawnl()`, `spawnlp()`, `spawnv()`, `spawnvp()`函数唤起的新进程会继承当前进程的运行环境。值得注意的是，*env*中的键-值对均应为字符串，无效的键或值会导致函数执行失败，而后返回结束码`127`。
+
+等价使用`spawnlp()`和`spawnvpe()`的示例：
+
+```
+import os
+os.spawnlp(os.P_WAIT, 'cp', 'cp', 'index.html', '/dev/null')
+
+L = ['cp', 'index.html', '/dev/null']
+os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
+```
+
+支持：Unix，Windows。`spawnlp()`, `spawnlpe()`, `spawnvp()`, `spawnvpe()`不在Windows上支持；`spawnle()`, `spawnve()`在Windows上不是线程安全的；推荐使用`subprocess`模块。
+
+
