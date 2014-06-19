@@ -1539,4 +1539,103 @@ os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
 
 支持：Unix，Windows。`spawnlp()`, `spawnlpe()`, `spawnvp()`, `spawnvpe()`不在Windows上支持；`spawnle()`, `spawnve()`在Windows上不是线程安全的；推荐使用`subprocess`模块。
 
+* os.P_NOWAIT
+* os.P_NOWAITO
 
+[`spawn*`](#os.spawnl)函数中*mode*参数的可用选项。如果指定其中的任意一个选项，`spawn*()`函数将在新建进程后立刻返回新进程的ID。
+
+支持：Unix，Windows。
+
+* os.P_WAIT
+
+[`spawn*`](#os.spawnl)函数中*mode*参数的可用选项。如果*mode*设置为此选项，则函数会等到新进程执行完毕后，在进程正常结束时返回新进程的结束码，或在进程被信号*signal*终止时返回`-signal`值。
+
+支持：Unix，Windows。
+
+* os.P_DETACH
+* os.P_OVERLAY
+
+[`spawn*`](#os.spawnl)函数中*mode*参数的可用选项。这两个选项的可移植性比上面已经列出的几个选项略低。`P_DETACH`类似于`P_NOWAIT`，但是新进程会从调用进程的控制台中分离。如果使用`P_OVERLAY`，则当前进程会被新建进程替换，函数不返回。
+
+支持：Windows。
+
+### [os.startfile(path[, operation])](id:os.startfile)
+
+使用关联的程序打开文件。
+
+如果*operation*未指定或指定为`'open'`，则此函数行为类似于在Windows资源管理器中双击该文件，或在命令行中将文件名作为参数传给**start**命令：使用文件扩展名关联的应用程序（如果指定的话）打开。
+
+当*operation*设置为其他值时，该值必须是一个“命令动词”，用以指定该对文件做何种操作。微软给出的常见动词有`'print'`、`'edit'`（用于文件）、`explore`、`find`（用于目录）。
+
+`startfile()`在关联的应用程序启动后立刻返回。此函数没有等待应用程序执行结束再返回的选项，而且无法取回应用程序结束状态码。*path*参数为当前的相对路径。如果想要使用绝对路径，请确保路径的第一个字符不是斜线（`'/'`）；若指定为基本的Win32函数`ShellExecute()`则不会执行。可以使用[`os.path.normpath()`](https://docs.python.org/3/library/os.path.html#os.path.normpath)确保路径被编码为正确的Win32格式。
+
+支持：Windows。
+
+### [os.system(command)](id:os.system)
+
+在子shell中执行命令（字符串形式给出）。此函数通过调用标准C函数`system()`实现，从而也有同样的限制。例如`sys.stdin`中的变动不会反映在已经执行完毕的命令的环境中。如果*command*有输出，则会送往解释器的标准输出中。
+
+在Unix上，函数返回值是编码给`wait()`函数使用的进程结束码。注意到POSIX并不向C函数`system()`的返回值指定含义，所以此Python函数的返回值是平台相关的。
+
+在Windows上，执行*command*后，返回值通过系统命令行返回。系统命令行由Windows环境变量`COMSPEC`给出：通常为**cmd.exe**，由**cmd**返回命令执行完毕的结束码；对于使用非原生命令行的系统，请查看该命令行程序的帮助文档。
+
+[`subprocess`](https://docs.python.org/3/library/subprocess.html#module-subprocess)模块提供了功能更加强大的用于新建子进程并取回其执行结果的工具。所以更推荐使用`subprocess`模块，留意[使用subprocess模块代替旧版函数](https://docs.python.org/3/library/subprocess.html#subprocess-replacements)一节的帮助文档。
+
+支持：Unix，Windows。
+
+### [os.times()](id:os.times)
+
+返回当前进程全局时间。返回值有以下五个属性：
+
+* user - 用户时间；
+* system - 系统时间；
+* children_user - 所有子进程的用户时间；
+* children_system - 所有子进程的系统时间；
+* elapsed - 从过去一个时间节点开始算起，逝去的总时间；
+
+为了向后兼容性，该结果对象行为类似一个拥有5个元素的元组，顺序为`user`, `system`, `children_user`, `children_system`, `elapsed`。
+
+详情参见Unix上*time(2)*的用户手册，或Windows上的相应API文档。在Windows上，只有`user`和`system`可知，其他的属性皆为0。
+
+支持：Unix，Windows。
+
+### [os.wait()](id:os.wait)
+
+等待子进程结束，而后返回一个包括了进程pid和进程结束状态码的元组：一个16位的数字，其低8位为终止该进程的信号值*signal*，其高8位为进程结束状态码（信号值为0时），如果产生了内核dump则低8位的最高位会被设置。
+
+支持：Unix。
+
+### [os.waitid(idtype, id, options)](id:os.waitid)
+
+等待一个或多个子进程结束。参数*idtype*可以是`P_PID`, `P_PGID`, `P_ALL`。*id*为等待的进程pid。参数*options*为`WEXITED`, `WSTOPPED`, `WCONTINUED`选项的组合（或操作），也可能使用额外的选项`WNOHANG`, `WNOWAIT`。返回值为`siginfo_t`结构体对象，包括`si_pid`, `si_uid`, `si_signo`, `si_status`, `si_code`；返回值也可能为`None`，如果指定了`WNOHANG`选项且没有子进程处于等待状态。
+
+支持：Unix。
+
+* os.P_PID
+* os.P_PGID
+* os.P_ALL
+
+以上为`waitid()`函数的*idtype*参数选项。此参数影响到*id*如何被解析。
+
+支持：Unix。
+
+* os.WEXITED
+* os.WSTOPPED
+* os.WNOWAIT
+
+以上为`waitid()`函数的*option*参数选项。此参数指定等待信号的类型。
+
+支持：Unix。
+
+* os.CLD_EXITED
+* os.CLD_DUMPED
+* os.CLD_TRAPPED
+* os.CLD_CONTINUED
+
+以上为`waitid()`函数返回值中`si_code`属性可能使用的值。
+
+支持：Unix。
+
+### [os.waitpid(pid, options)](id:os.waitpid)
+
+此函数的行为
