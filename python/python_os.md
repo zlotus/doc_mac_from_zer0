@@ -1575,7 +1575,7 @@ os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
 
 在子shell中执行命令（字符串形式给出）。此函数通过调用标准C函数`system()`实现，从而也有同样的限制。例如`sys.stdin`中的变动不会反映在已经执行完毕的命令的环境中。如果*command*有输出，则会送往解释器的标准输出中。
 
-在Unix上，函数返回值是编码给`wait()`函数使用的进程结束码。注意到POSIX并不向C函数`system()`的返回值指定含义，所以此Python函数的返回值是平台相关的。
+在Unix上，函数返回值是`wait()`函数使用的进程结束码。注意到POSIX并不向C函数`system()`的返回值指定含义，所以此Python函数的返回值是平台相关的。
 
 在Windows上，执行*command*后，返回值通过系统命令行返回。系统命令行由Windows环境变量`COMSPEC`给出：通常为**cmd.exe**，由**cmd**返回命令执行完毕的结束码；对于使用非原生命令行的系统，请查看该命令行程序的帮助文档。
 
@@ -1638,4 +1638,45 @@ os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
 
 ### [os.waitpid(pid, options)](id:os.waitpid)
 
-此函数的行为
+此函数的行为在Windows上与在Unix上略有不同。
+
+在Unix上，等待给定子进程进程*pid*结束，返回一个包括子进程ID和结束状态码（由`wait()`函数定义）的元组。指定*options*参数会改变函数行为，该值通常为`0`。
+
+如果*pid*不为`0`，则`waitpid()`请求给定进程的状态。如果*pid*为`0`，则请求当前进程所在进程组下任意子进程状态。如果*pid*为`-1`，则请求当前进程的任意子进程状态。如果*pid*小于`-1`，则请求进程组`-pid`（即*pid*的绝对值）中任意进程的状态。
+
+当系统调用返回-1时，抛出`OSError`，并附带错误码。
+
+在Windows上，等待进程句柄*pid*指定进程结束，返回一个包括*pid*和结束状态码（较原来的状态码左移8位，为了使得函数跨平台使用更加方便）。在Windows上指定小于等于0的*pid*值没有特殊意义，而且会使函数抛出异常；*options*参数不起作用；*pid*可以指向任意已知ID的进程，并不要求必须为子进程。使用带有`P_NOWAIT`选项的[`spawn*`](#os.spawnl)函数即可返回恰当的进程句柄。
+
+### [os.wait3(options)](id:os.wait3)
+
+与[`waitpid()`](#os.waitpid)类似，只不过不需要进程ID这个参数，且返回值变为包含了子进程ID、结束状态码以及资源利用信息的元组。资源利用信息由[`resource`](https://docs.python.org/3/library/resource.html#module-resource).[`getrusage()`](https://docs.python.org/3/library/resource.html#resource.getrusage)给出，*options*选项与[`waitpid()`](#os.waitpid)、[`wait4()`](#os.wait4)相同。
+
+支持：Unix。
+
+### [os.wait4(options)](id:os.wait4)
+
+与[`waitpid()`](#os.waitpid)类似，只不过返回值变为包含了子进程ID、结束状态码以及资源利用信息的元组。资源利用信息由[`resource`](https://docs.python.org/3/library/resource.html#module-resource).[`getrusage()`](https://docs.python.org/3/library/resource.html#resource.getrusage)给出。此函数参数与[`waitpid()`](#os.waitpid)完全相同。
+
+支持：Unix。
+
+* os.WNOHANG
+
+`waitpid()`的*options*参数选项，如果子进程没有提供状态信息则立刻返回`(0, 0)`。
+
+支持：Unix。
+
+* os.WCONTINUED
+
+`waitpid()`的*options*参数选项，使得子进程自上一次状态返回后从一个业务控制中断后恢复时，返回状态信息。
+
+支持：Unix。
+
+* os.WUNTRACED
+
+`waitpid()`的*options*参数选项，如果子进程被中止，而中止时的状态没有被返回，则返回该状态。
+
+支持：Unix。
+
+下面的函数需要使用`system()`, `wait()`, `waitpid()`函数返回的进程状态码作为参数。可能用于确定进程的配置。
+
