@@ -1680,3 +1680,57 @@ os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
 
 下面的函数需要使用`system()`, `wait()`, `waitpid()`函数返回的进程状态码作为参数。可能用于确定进程的配置。
 
+### [os.WCOREDUMP(status)](id:os.WCOREDUMP)
+
+如果进程产生了内核dump，则返回`True`，否则返回`False`
+
+支持：Unix。
+
+### [os.WIFCONTINUED(status)](id:os.WIFCONTINUED)
+
+如果进程从一个业务控制中断中恢复，则返回`True`，否则返回`False`
+
+支持：Unix。
+
+### [os.WIFSTOPPED(status)](id:os.WIFSTOPPED)
+
+如果进程中止，则返回`True`，否则返回`False`
+
+支持：Unix。
+
+### [os.WIFSIGNALED(status)](id:os.WIFSIGNALED)
+
+如果进程因为一个信号而终止，则返回`True`，否则返回`False`
+
+支持：Unix。
+
+### [os.WIFEXITED(status)](id:os.WIFEXITED)
+
+如果进程因为系统调用*exit(2)*而终止，则返回`True`，否则返回`False`
+
+支持：Unix。
+
+### [os.WEXITSTATUS(status)](id:os.WEXITSTATUS)
+
+如果`WIFEXITED(status)`为真，则返回系统调用*exit(2)*的整形参数值，其他情况下的返回值均无意义。
+
+支持：Unix。
+
+### [os.WSTOPSIG(status)](id:os.WSTOPSIG)
+
+返回导致进程中止的信号。
+
+支持：Unix。
+
+### [os.WTERMSIG(status)](id:os.WTERMSIG)
+
+返回导致进程退出的信号。
+
+支持：Unix。
+
+## 进程调度接口
+
+以下函数可以控制操作为进程系统调度CPU时间的行为。只在部分Unix系统上有效，更多详情请查看Unix用户手册（`man`）。
+
+如果系统支持，则在模块中可以调用下列函数：
+
