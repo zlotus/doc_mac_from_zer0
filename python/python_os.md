@@ -1732,5 +1732,182 @@ os.spawnvpe(os.P_WAIT, 'cp', L, os.environ)
 
 以下函数可以控制操作为进程系统调度CPU时间的行为。只在部分Unix系统上有效，更多详情请查看Unix用户手册（`man`）。
 
-如果系统支持，则在模块中可以调用下列函数：
+如果系统支持，则在模块中可以找到下列调度策略相关选项：
 
+### [os.SCHED_OTHER](id:os.SCHED_OTHER)
+
+默认调度策略。
+
+### [os.SCHED_BATCH](id:os.SCHED_BATCH)
+
+对于密集调度CPU进程的调度策略，剩余计算能力用以保证交互性。
+
+### [os.SCHED_IDLE](id:os.SCHED_IDLE)
+
+低优先级后台进程的调度策略。
+
+### [os.SCHED_SPORADIC](id:os.SCHED_SPORADIC)
+
+服务进程的调度策略。
+
+### [os.SCHED_FIFO](id:os.SCHED_FIFO)
+
+先进先出调度策略。
+
+### [os.SCHED_RR](id:os.SCHED_RR)
+
+轮询调度策略。
+
+### [os.SCHED_RESET_ON_FORK](id:os.SCHED_RESET_ON_FORK)
+
+此选项可以与其他选项做或操作（`|`）共同使用。当带有此标识的进程fork子进程时，子进程的子进程的调度策略及进程优先级会被重置（不继承）。
+
+### [class os.sched_param(sched_priority)](id:os.sched_param)
+
+该类定义了`sched_setparam()`, `sched_setscheduler()`, `sched_getparam()`函数中使用的可调谐调度参数。该参数是可变的。
+
+目前只有一个可选项：
+
+#### [sched_priority](id:os.sched_param.sched_priority)
+
+调度策略的优先级。
+
+### [os.sched_get_priority_min(policy)](id:os.sched_get_priority_min)
+
+返回策略*policy*的最小优先级。*policy*参数为上述调度策略常量中的一种。
+
+### [os.sched_get_priority_max(policy)](id:os.sched_get_priority_max)
+
+返回策略*policy*的最小优先级。*policy*参数为上述调度策略常量中的一种。
+
+### [os.sched_setscheduler(pid, policy, param)](id:os.sched_setscheduler)
+
+为进程*pid*设置调度策略。*pid*为`0`时表示调用者所在进程。*policy*参数为上述调度策略常量中的一种。*param*参数是一个[`sched_param`](#os.sched_param)实例。
+
+### [os.sched_getscheduler(pid)](id:os.sched_getscheduler)
+
+返回进程*pid*的调度策略。*pid*为`0`时表示调用者所在进程。*param*参数是一个[`sched_param`](#os.sched_param)实例。
+
+### [os.sched_setparam(pid, param)](id:os.sched_setparam)
+
+为进程*pid*设置调度参数。*pid*为`0`时表示调用者所在进程。*param*参数是一个[`sched_param`](#os.sched_param)实例。
+
+### [os.sched_getparam(pid)](id:os.sched_getparam)
+
+以[`sched_param`](#os.sched_param)实例的形式返回*pid*的调度参数。*pid*为`0`时表示调用者所在进程。
+
+### [os.sched_rr_get_interval(pid)](id:os.sched_rr_get_interval)
+
+返回进程*pid*美妙的轮询量。*pid*为`0`时表示调用者所在进程。
+
+### [os.sched_yield()](id:os.sched_yield)
+
+主动放弃CPU占用。
+
+### [os.sched_setaffinity(pid, mask)](id:os.sched_setaffinity)
+
+将进程*pid*的调用限制在指定核心上，*pid*为`0`时表示调用者所在进程。*mask*是一个整型容器的迭代器，用以表示将进程限制在哪些核心上。
+
+### [os.sched_getaffinity(pid)](id:os.sched_getaffinity)
+
+查看进程*pid*被限制在了哪些核心上。
+
+## [其他系统信息](id:miscellaneous-system-information)
+
+### [os.confstr(name)](id:os.confstr)
+
+以字符串形式返回系统设置值。*name*指定返回的设置值的名称，它可能是以字符串形式给出的系统设置值的名称，这些名称定义在一些标准中（POSIX, Unix 95, Unix 98, and others）。一些平台也可能定义额外的名称。主机平台支持的所有名称都会定义在`confstr_names`字典中，如果要找的设置不再该字典中，则也可以给*name*传入一个整型。
+
+如果*name*指定的系统设置不存在，则返回`None`。
+
+如果*name*是字符串，且该值未定义，则抛出`ValueError`。如果系统不支持*name*指定的设置值，即使该值的名称定义在`confstr_names`中，也会抛出`OSError`，并给出[`errno.EINVAL`](https://docs.python.org/3/library/errno.html#errno.EINVAL)作为错误代码。
+
+支持：Unix。
+
+### [os.confstr_names](id:os.confstr_names)
+
+一个字典，存储了从`confstr()`函数使用的设置名称，到一个系统支持的代表该设置的整型值的映射。可以用于定义系统支持的设置名称的集合。
+
+支持：Unix。
+
+### [os.cpu_count()](id:os.cpu_count)
+
+返回系统中的CPU个数。
+
+### [os.getloadavg()](id:os.getloadavg)
+
+返回系统队列中最近1、5、15分钟内的平均进程数，如果无法获得该平均数，则抛出`OSError`。
+
+支持：Unix。
+
+### [os.sysconf(name)](id:os.sysconf)
+
+返回系统配置值所对应的整数。如果*name*指定的名称未定义，则返回`-1`。用于`confstr()`函数的*name*参数的值同样适用于此函数的*name*参数。已知名称的映射定义在`sysconf_names`字典中。
+
+支持：Unix。
+
+### [os.sysconf_names](id:os.sysconf_names)
+
+一个字典，存储了从`sysconf()`函数使用的设置名称，到一个系统支持的代表该设置的整型值的映射。可以用于定义系统支持的设置名称的集合。
+
+支持：Unix。
+
+下面的模块级变量用于路径操作，支持所有平台。
+
+注：高级路径操作函数定义在[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块中。
+
+### [os.curdir](id:os.curdir)
+
+操作系统用来表示当前目录的字符串常量。在Windows和POSIX上就是`'.'`。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+### [os.pardir](id:os.pardir)
+
+操作系统用来表示上级目录的字符串常量。在Windows和POSIX上就是`'..'`。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+### [os.sep](id:os.sep)
+
+操作系统用来分隔路径名各部分的字符串常量。在POSIX上是`'/'`，在Windows上是`'\\'`。仅知道这个变量并不能对路径进行方便的解析或合并，推荐使用[`os.path.split()`](https://docs.python.org/3/library/os.path.html#os.path.split)和[`os.path.join()`](https://docs.python.org/3/library/os.path.html#os.path.join)函数。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+### [os.altsep](id:os.altsep)
+
+操作系统用来分隔路径各部分的另一种可选的字符串常量，在只提供一种分隔符的平台上返回`None`。在Windows上是`'/'`。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+### [os.extsep](id:os.extsep)
+
+用于分隔文件名与扩展名的字符串常量，如对于名为`os.py`文件的文件，分隔符就是`'.'`。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+### [os.pathsep](id:os.pathsep)
+
+操作系统用来分隔各搜索路径（如在`PATH`中定义的路径）的字符串常量，比如在POSIX上是`':'`，在Windows上是`';'`。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+### [os.defpath](id:os.defpath)
+
+如果系统不提供`PATH`环境变量，则此常量就是[`exec*p*`](#os.execl)和[`spawn*p*`](#os.spawnl)函数的默认搜索路径。
+
+### [os.linesep](id:os.linesep)
+
+操作系统的行分隔符（或结束符），这可能是一个字符，如在POSIX上是`'\n'`；也可能是多个字符，如在Windows上是`'\r\n'`。在文本模式下写文件（`mode='wt'`）时请勿使用*os.linespe*作为行结束符，在所有平台上都应该使用`'\n'`。
+
+### [os.devnull](id:os.devnull)
+
+系统中空设备的路径，如在POSIX上是`'/dev/null'`，在Windows上是`'nul'`。[`os.path`](https://docs.python.org/3/library/os.path.html#module-os.path)模块同样提供此常量。
+
+* os.RTLD_LAZY
+* os.RTLD_NOW
+* os.RTLD_GLOBAL
+* os.RTLD_LOCAL
+* os.RTLD_NODELETE
+* os.RTLD_NOLOAD
+* os.RTLD_DEEPBIND
+
+`setdlopenflags()`和`getdlopenflags()`函数的标识选项。这些标识的解释参见Unix上*dlopen(3)*函数的用户手册（`man`）。
+
+## 其它函数
+
+### [os.urandom(n)](id:os.urandom)
+
+返回*n*个随机生成的字节，常用于加密。
+
+函数返回的随机字节由平台指定的随机源给出。虽然返回的值应该“足够随机”（足够不可预测），可以用于加密程序，但此函数的随机程度依赖于平台实现。在类Unix平台上，会查询`/dev/urandom`；而在Windows上，则会调用`CryptGenRandom()`。如果函数找不到平台的随机源，则抛出`NotImplementedError`。
+
+要在当前平台上使用更加易用的随机函数，可以使用[`random.SystemRandom`](https://docs.python.org/3/library/random.html#random.SystemRandom)。
