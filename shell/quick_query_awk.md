@@ -1,4 +1,4 @@
-# awk 命令
+# awk 命令速查
 
 文章的全部干货都来源于**[酷壳]**(http://coolshell.cn/)的**[AWK 简明教程]**(http://coolshell.cn/articles/9070.html)。
 
@@ -229,5 +229,184 @@ FILENAME     |当前文件名
     _mdnsresponder, 3760KB
     zealot, 3800464KB
 
+# awk 命令详解
 
+## 调用awk
 
+如果在命令行中使用awk，通常型为：
+
+```
+$ ￼￼awk -F field-separator 'commands' input-files
+```
+
+`-F field-separator`为可选项，用于指定域分隔符，默认为空格，如果需要处理如`','`、`':'`、`';'`之类的字符做分隔符时，可以设置该值，如使用`':'`的情形：
+
+```
+$ awk -F: 'commands' input-files
+```
+
+也可以将awk命令写在文件中，作为脚本调用，如调用名为awk-script-file的脚本文件：
+
+```
+$ awk -f awk-script-file input-files
+```
+
+`-f`选项用于指定脚本文件名。
+
+## awk脚本
+
+### 模式和动作
+
+awk脚本由各种**动作**和**模式**组成。
+
+awk使用`-F`命令指定的分隔符（不指定时使用空格）分离记录中的域，直到发现新一行。这个动作将一直持续到文件结束。
+
+awk命令可以有许多语句，语句中的**模式**用于控制**动作**的触发条件。
+
+**模式**可以是任何条件语句、复合语句或正则表达式。模式包括了两个特殊字段，`BEGIN`和`END`。`BEGIN`语句使用在awk的任何文本浏览动作之前，之后awk文本浏览动作依据输入文件开始执行，`END`语句用来用来在awk完成文本浏览动作后打印输出文本总数及结尾状态标识。
+
+**动作**在`{}`内声明，通常为打印动作，或是诸如条件语句或循环语句。如果不指名**动作**，awk将打印所有浏览记录。
+
+### 记录和域
+
+awk会将读取的一条记录用`-F`指定的分隔符分为多个域，并依次将域命名为`$1`, `$2`, `$3`等，这些域名的使用类似于语言中变量名的使用。
+
+`{print $1, $3}`就表示打印第1域和第3域，而`$0`表示所有的域，所以`{print $0}`表示打印所有域。
+
+上面的在`{}`中的`print`就是一个awk动作。
+
+假设有数据文件grade.txt，文件分隔符为`TAB`（即`'\t'`）：
+
+```
+$ cat grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+J.Lulu	06/99	48317	green	9	24	26
+P.Bunny	02/99	48	Yellow	12	35	28
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+### 常用的输入输出
+
+使用命令行时通常我们将结果重定向到文件中：
+
+```
+$ awk -F\t '{print $1, $3}' grade.txt > wow
+```
+
+或是使用`tee`，在将结果输出至标准输出的同时，写入文件：
+
+```
+$ awk -F\t '{print $1, $3}' grade.txt | tee wow
+```
+
+如果是脚本，在输入上我们可以使用文件：
+
+```
+$ belt.awk grade.txt
+```
+
+或是使用标准输入：
+
+```
+$ belt.awk < grade.txt
+```
+
+或是管道：
+
+```
+$ grade.txt | belt.awk
+```
+
+### 打印头尾信息
+
+使用`BEGIN`打印表头，为了对齐使用了制表符`\t`：
+
+```
+$ awk 'BEGIN {print "Name\tBelt\n--------------------"}
+quote> {print $1"\t"$4}' grade.txt
+Name	Belt
+--------------------
+M.Transley	Green
+J.Lulu	green
+P.Bunny	Yellow
+J.Troll	Brown-3
+L.Transly	Brown-2
+```
+
+使用`END`打印表尾：
+
+```
+$ awk 'BEGIN {print "Name\n----------"} {print $1} END {print "----------\ntotle: " NR}' grade.txt
+Name
+----------
+M.Transley
+J.Lulu
+P.Bunny
+J.Troll
+L.Transly
+----------
+totle: 5
+```
+
+### 条件操作
+
+操作符        |描述
+:------------|:-----------
+<            |小于
+<=           |小于等于
+==           |等于
+\>           |大于
+\>=          |大于等于
+~            |匹配正则表达式
+!~           |不匹配正则表达式
+
+使用正则表达式匹配域时，用`~`接`/Regular_Express/`，如果使用`if`语句则需要放在`()`中。示例，为第4域匹配正则表达式，输出匹配的记录：
+
+```
+$ awk '{if($4~/Brown/) print $0}' grade.txt
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+上例中不使用`if`也可以，不指定**动作**时awk默认输出整条记录：
+
+```
+$ awk '$4~/Brown/' grade.txt
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+使用正则表达式模糊匹配域：
+
+```
+$ awk '{if($3~/48/) print $0}' grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+J.Lulu	06/99	48317	green	9	24	26
+P.Bunny	02/99	48	Yellow	12	35	28
+J.Troll	07/99	4842	Brown-3	12	26	26
+```
+
+或
+
+```
+$ awk '$3~/48/ {print $0}' grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+J.Lulu	06/99	48317	green	9	24	26
+P.Bunny	02/99	48	Yellow	12	35	28
+J.Troll	07/99	4842	Brown-3	12	26	26
+```
+
+使用`==`精确匹配：
+
+```
+$ awk '$3==48 {print $0}' grade.txt
+P.Bunny	02/99	48	Yellow	12	35	28
+```
+
+或
+
+```
+$ awk '{if($3==48) print $0}' grade.txt
+P.Bunny	02/99	48	Yellow	12	35	28
+```
