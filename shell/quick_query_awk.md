@@ -353,15 +353,15 @@ totle: 5
 
 操作符        |描述
 :------------|:-----------
-<            |小于
-<=           |小于等于
-==           |等于
-\>           |大于
-\>=          |大于等于
-~            |匹配正则表达式
-!~           |不匹配正则表达式
+`<`          |小于
+`<=`         |小于等于
+`==`         |等于
+`>`          |大于
+`>=`         |大于等于
+`~`          |匹配正则表达式
+`!~`         |不匹配正则表达式
 
-使用正则表达式匹配域时，用`~`接`/Regular_Express/`，如果使用`if`语句则需要放在`()`中。示例，为第4域匹配正则表达式，输出匹配的记录：
+* 使用正则表达式匹配域时，用`~`接`/Regular_Express/`，如果使用`if`语句则需要放在`()`中。示例，为第4域匹配正则表达式，输出匹配的记录：
 
 ```
 $ awk '{if($4~/Brown/) print $0}' grade.txt
@@ -377,7 +377,7 @@ J.Troll	07/99	4842	Brown-3	12	26	26
 L.Transly	05/99	4712	Brown-2	12	30	28
 ```
 
-使用正则表达式模糊匹配域：
+* 使用正则表达式模糊匹配域：
 
 ```
 $ awk '{if($3~/48/) print $0}' grade.txt
@@ -397,7 +397,7 @@ P.Bunny	02/99	48	Yellow	12	35	28
 J.Troll	07/99	4842	Brown-3	12	26	26
 ```
 
-使用`==`精确匹配：
+* 使用`==`精确匹配：
 
 ```
 $ awk '$3==48 {print $0}' grade.txt
@@ -409,4 +409,171 @@ P.Bunny	02/99	48	Yellow	12	35	28
 ```
 $ awk '{if($3==48) print $0}' grade.txt
 P.Bunny	02/99	48	Yellow	12	35	28
+```
+
+* 使用`!~`的正则表达式：
+
+```
+$ awk '$0 !~ /Brown/' grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+J.Lulu	06/99	48317	green	9	24	26
+P.Bunny	02/99	48	Yellow	12	35	28
+```
+
+配合`if`使用`!~`：
+
+```
+$ awk '{if($4!~/Brown/) print $1, $4}' grade.txt
+M.Transley Green
+J.Lulu green
+P.Bunny Yellow
+```
+
+* 比较：
+
+小于：
+
+```
+$ awk '{if($6<$7) print $1" try better at next comp"}' grade.txt
+M.Transley try better at next comp
+J.Lulu try better at next comp
+```
+
+小于等于：
+
+```
+$ awk '{if($6<=$7) print $1}' grade.txt
+M.Transley
+J.Lulu
+J.Troll
+```
+
+大于：
+
+```
+$ awk '{if($6>$7) print $1}' grade.txt
+P.Bunny
+L.Transly
+```
+
+* 常见的正则表达式功能：
+
+匹配大小写，使用`[]`匹配字符：
+
+```
+$ awk '/[Gg]reen/' grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+J.Lulu	06/99	48317	green	9	24	26
+```
+
+通配符，`.`：
+
+```
+$ awk '$1 ~ /^....a/' grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+逻辑或，`|`：
+
+```
+$ awk '$4 ~ /(Yellow|Brown)/' grade.txt
+P.Bunny	02/99	48	Yellow	12	35	28
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+行首`^`：
+
+```
+$ awk '/^J/' grade.txt
+J.Lulu	06/99	48317	green	9	24	26
+J.Troll	07/99	4842	Brown-3	12	26	26
+```
+
+行尾`$`:
+
+```
+$ awk '/28$/' grade.txt
+P.Bunny	02/99	48	Yellow	12	35	28
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+### 复合逻辑
+
+* 逻辑与，`&&`：
+
+```
+$ awk '{if ($1=="P.Bunny" && $4=="Yellow") print $0}' grade.txt
+P.Bunny	02/99	48	Yellow	12	35	28
+```
+
+* 逻辑或，`||`：
+
+```
+$ awk '{if ($4=="Yellow" || $4~/Brown/) print $0}' grade.txt
+P.Bunny	02/99	48	Yellow	12	35	28
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+* 逻辑否，`!`：
+
+```
+$ awk '$4 != "Brown" {print $1, $4}' grade.txt
+M.Transley Green
+J.Lulu green
+P.Bunny Yellow
+J.Troll Brown-3
+L.Transly Brown-2
+```
+
+### 内置变量的示例
+
+* 已读取的记录数，`NR`：
+
+```
+$ awk '{print} END {print "total: "NR}' grade.txt
+M.Transley	05/99	48311	Green	8	40	44
+J.Lulu	06/99	48317	green	9	24	26
+P.Bunny	02/99	48	Yellow	12	35	28
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+total: 5
+```
+
+使用`NR`检查保证文件记录数大于0：
+
+```
+$ awk '{if (NR>0 && $4~/Brown/) print $0}' grade.txt
+J.Troll	07/99	4842	Brown-3	12	26	26
+L.Transly	05/99	4712	Brown-2	12	30	28
+```
+
+* 当前记录的域数，`NF`：
+
+```
+$ awk '{print NF, NR, $0} END {print FILENAME}' grade.txt
+7 1 M.Transley	05/99	48311	Green	8	40	44
+7 2 J.Lulu	06/99	48317	green	9	24	26
+7 3 P.Bunny	02/99	48	Yellow	12	35	28
+7 4 J.Troll	07/99	4842	Brown-3	12	26	26
+7 5 L.Transly	05/99	4712	Brown-2	12	30	28
+grade.txt
+```
+
+显示当前目录名：
+
+```
+$ pwd
+/Users/zealot
+$ echo $PWD | awk -F/ '{print $NF}'
+zealot
+```
+
+显示文件名：
+
+```
+$ echo "/Users/zealot/grade.txt" | awk -F/ '{print $NF}'
+grade.txt
 ```
